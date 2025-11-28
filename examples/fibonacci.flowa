@@ -1,0 +1,15 @@
+# Factorial example (simpler than fibonacci)
+
+def factorial(n):
+    return n * factorial(n - 1)
+
+# This will cause infinite recursion without if-statements
+# Need to implement if-statement parsing first
+# result = factorial(5)
+
+# For now, simple example:
+def double(x):
+    return x * 2
+
+result = 5 |> double()
+# result = 10

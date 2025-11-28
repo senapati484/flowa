@@ -1,0 +1,18 @@
+# Data transformation pipeline example
+
+def square(x):
+    return x * x
+
+def is_even(x):
+    return x - (x / 2) * 2
+
+def increment(x):
+    return x + 1
+
+# Pipeline composition
+def pipeline(n):
+    return n |> increment() |> square()
+
+# Process data
+result1 = 5 |> pipeline()  # (5 + 1)^2 = 36
+result2 = 10 |> square() |> increment()  # 10^2 + 1 = 101

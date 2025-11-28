@@ -1,0 +1,14 @@
+# Basic Flowa example demonstrating pipelines and functions
+
+def add(x, y):
+    return x + y
+
+def multiply(x, factor):
+    return x * factor
+
+def process(n):
+    return n |> add(10) |> multiply(2)
+
+# Execute
+result = process(5)
+# result = (5 + 10) * 2 = 30
