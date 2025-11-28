@@ -15,24 +15,34 @@ const PROMPT = ">>> "
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Flowa Compiler v0.1 (MVP)")
+		fmt.Println("Flowa Programming Language v0.1 (MVP)")
 		fmt.Println("Usage:")
-		fmt.Println("  flowac repl      - Start REPL")
-		fmt.Println("  flowac run <file> - Run a file")
+		fmt.Println("  flowa <file.flowa>  - Run a Flowa script")
+		fmt.Println("  flowa repl          - Start interactive REPL")
 		os.Exit(1)
 	}
 
-	switch os.Args[1] {
+	command := os.Args[1]
+
+	// If the first argument ends with .flowa, treat it as a file to run
+	if len(command) > 6 && command[len(command)-6:] == ".flowa" {
+		runFile(command)
+		return
+	}
+
+	// Otherwise, check for explicit commands
+	switch command {
 	case "repl":
 		startREPL()
 	case "run":
 		if len(os.Args) < 3 {
-			fmt.Println("Usage: flowac run <file>")
+			fmt.Println("Usage: flowa run <file>")
 			os.Exit(1)
 		}
 		runFile(os.Args[2])
 	default:
-		fmt.Println("Unknown command:", os.Args[1])
+		fmt.Println("Unknown command:", command)
+		fmt.Println("Usage: flowa <file.flowa> or flowa repl")
 		os.Exit(1)
 	}
 }

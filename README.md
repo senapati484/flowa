@@ -10,44 +10,59 @@
 - 🧵 **Concurrency** (planned): Built-in `spawn` and `await` for lightweight tasks
 - 🎯 **Simple & Minimal**: Clean design with powerful primitives
 
-## Quick Start
+## Installation
 
-### Installation
+### Quick Install (Linux/macOS)
 
 ```bash
 # Clone the repository
 git clone https://github.com/senapati484/flowa.git
 cd flowa
 
-# Build the compiler
-go build -o flowac ./cmd/flowac
-
-# Optionally install to PATH
-sudo mv flowac /usr/local/bin/
+# Run the installer
+chmod +x install.sh
+./install.sh
 ```
 
-### Run Your First Flowa Program
+This will build and install `flowa` to `/usr/local/bin`, making it available globally.
 
-Create a file `hello.flowa`:
-
-```python
-def greet(name):
-    return name
-
-result = "World" |> greet()
-# result = "World"
-```
-
-Run it:
+### Manual Installation
 
 ```bash
-flowac run hello.flowa
+# Build the binary
+make build
+
+# Install globally (requires sudo)
+make install
+
+# Or install manually
+sudo cp flowa /usr/local/bin/
+```
+
+### Verify Installation
+
+```bash
+flowa examples/hello.flowa
+```
+
+## Usage
+
+### Run a Flowa Script
+
+```bash
+# Simple: just provide the filename
+flowa hello.flowa
+
+# Or use the explicit 'run' command
+flowa run hello.flowa
 ```
 
 ### Interactive REPL
 
+### Interactive REPL
+
 ```bash
-flowac repl
+flowa repl
 ```
 
 ```
@@ -128,7 +143,7 @@ result = process(5)  # 30
 ```
 
 ```bash
-flowac run examples/hello.flowa
+flowa examples/hello.flowa
 ```
 
 ### 2. Data Pipeline ([examples/pipeline.flowa](examples/pipeline.flowa))
@@ -144,7 +159,7 @@ result = 5 |> increment() |> square()  # 36
 ```
 
 ```bash
-flowac run examples/pipeline.flowa
+flowa examples/pipeline.flowa
 ```
 
 ### 3. Simple Recursion ([examples/fibonacci.flowa](examples/fibonacci.flowa))
@@ -157,17 +172,30 @@ result = 5 |> double()  # 10
 ```
 
 ```bash
-flowac run examples/fibonacci.flowa
+flowa examples/fibonacci.flowa
 ```
 
 > **Note**: Conditional statements (`if`/`else`) are defined in the AST but not yet fully working in the  interpreter. Coming in next update!
 
 ## Development
 
+### Building from Source
+
+```bash
+# Using Make
+make build
+
+# Or using Go directly
+go build -o flowa ./cmd/flowac
+```
+
 ### Running Tests
 
 ```bash
 # Run all tests
+make test
+
+# Or using Go
 go test ./...
 
 # Run specific package tests
@@ -179,6 +207,12 @@ go test ./pkg/parser
 
 ```bash
 go fmt ./...
+```
+
+### Uninstalling
+
+```bash
+make uninstall
 ```
 
 ### Project Structure
