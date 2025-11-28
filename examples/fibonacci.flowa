@@ -1,15 +1,14 @@
-# Factorial example (simpler than fibonacci)
+# Simple example demonstrating pipelines
 
-def factorial(n):
-    return n * factorial(n - 1)
-
-# This will cause infinite recursion without if-statements
-# Need to implement if-statement parsing first
-# result = factorial(5)
-
-# For now, simple example:
 def double(x):
     return x * 2
 
-result = 5 |> double()
-# result = 10
+def triple(x):
+    return x * 3
+
+# Chain operations
+result = 5 |> double() |> triple()
+
+print(result)
+# Expected output: 30
+# Calculation: 5 * 2 = 10, then 10 * 3 = 30

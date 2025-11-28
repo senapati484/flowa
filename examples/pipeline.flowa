@@ -13,6 +13,12 @@ def increment(x):
 def pipeline(n):
     return n |> increment() |> square()
 
-# Process data
-result1 = 5 |> pipeline()  # (5 + 1)^2 = 36
-result2 = 10 |> square() |> increment()  # 10^2 + 1 = 101
+# Process data and print results
+result1 = 5 |> pipeline()
+result2 = 10 |> square() |> increment()
+
+print(result1)
+print(result2)
+# Expected output:
+# 36
+# 101

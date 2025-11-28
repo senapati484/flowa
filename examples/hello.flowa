@@ -9,6 +9,8 @@ def multiply(x, factor):
 def process(n):
     return n |> add(10) |> multiply(2)
 
-# Execute
+# Execute and print result
 result = process(5)
-# result = (5 + 10) * 2 = 30
+print(result)
+# Expected output: 30
+# Calculation: (5 + 10) * 2 = 30

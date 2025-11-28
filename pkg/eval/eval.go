@@ -45,6 +45,13 @@ type Function struct {
 func (f *Function) Type() string    { return "FUNCTION" }
 func (f *Function) Inspect() string { return "function" }
 
+type BuiltinFunction struct {
+	Fn func(args ...Object) Object
+}
+
+func (b *BuiltinFunction) Type() string    { return "BUILTIN" }
+func (b *BuiltinFunction) Inspect() string { return "builtin function" }
+
 type Environment struct {
 	store map[string]Object
 	outer *Environment
@@ -52,7 +59,23 @@ type Environment struct {
 
 func NewEnvironment() *Environment {
 	s := make(map[string]Object)
-	return &Environment{store: s, outer: nil}
+	env := &Environment{store: s, outer: nil}
+
+	// Add built-in print function
+	env.store["print"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			for i, arg := range args {
+				if i > 0 {
+					fmt.Print(" ")
+				}
+				fmt.Print(arg.Inspect())
+			}
+			fmt.Println()
+			return NULL
+		},
+	}
+
+	return env
 }
 
 func NewEnclosedEnvironment(outer *Environment) *Environment {
@@ -231,13 +254,16 @@ func evalExpressions(exps []ast.Expression, env *Environment) []Object {
 }
 
 func applyFunction(fn Object, args []Object) Object {
-	function, ok := fn.(*Function)
-	if !ok {
+	switch fn := fn.(type) {
+	case *Function:
+		extendedEnv := extendFunctionEnv(fn, args)
+		evaluated := Eval(fn.Body, extendedEnv)
+		return unwrapReturnValue(evaluated)
+	case *BuiltinFunction:
+		return fn.Fn(args...)
+	default:
 		return newError("not a function: %s", fn.Type())
 	}
-	extendedEnv := extendFunctionEnv(function, args)
-	evaluated := Eval(function.Body, extendedEnv)
-	return unwrapReturnValue(evaluated)
 }
 
 func extendFunctionEnv(fn *Function, args []Object) *Environment {
