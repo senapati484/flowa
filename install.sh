@@ -20,7 +20,7 @@ echo "✓ Go found: $(go version)"
 
 # Build the binary
 echo "Building Flowa..."
-go build -o "$BINARY_NAME" ./cmd/flowac
+go build -o "$BINARY_NAME" ./cmd/flowa
 
 if [ ! -f "$BINARY_NAME" ]; then
     echo "❌ Build failed"

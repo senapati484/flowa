@@ -8,7 +8,7 @@ INSTALL_PATH=/usr/local/bin
 # Build the binary
 build:
 	@echo "Building Flowa..."
-	go build -o $(BINARY_NAME) ./cmd/flowac
+	go build -o $(BINARY_NAME) ./cmd/flowa
 	@echo "✓ Build complete: $(BINARY_NAME)"
 
 # Install globally (requires sudo on Linux/macOS)

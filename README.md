@@ -26,6 +26,21 @@ chmod +x install.sh
 
 This will build and install `flowa` to `/usr/local/bin`, making it available globally.
 
+### macOS-Specific: Homebrew Installation
+
+For Mac users, you can also use Homebrew (coming soon):
+
+```bash
+# Future: Once in Homebrew
+brew tap senapati484/flowa
+brew install flowa
+
+# Current: Local formula
+brew install --formula ./flowa.rb
+```
+
+See [INSTALL_MAC.md](INSTALL_MAC.md) for detailed macOS instructions.
+
 ### Manual Installation
 
 ```bash
@@ -186,7 +201,7 @@ flowa examples/fibonacci.flowa
 make build
 
 # Or using Go directly
-go build -o flowa ./cmd/flowac
+go build -o flowa ./cmd/flowa
 ```
 
 ### Running Tests
@@ -219,7 +234,7 @@ make uninstall
 
 ```
 flowa/
-├── cmd/flowac/         # CLI compiler tool
+├── cmd/flowa/          # CLI compiler tool
 │   └── main.go
 ├── pkg/
 │   ├── token/          # Token definitions

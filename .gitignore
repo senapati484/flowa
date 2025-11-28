@@ -1,0 +1,33 @@
+# Binaries
+flowa
+flowac
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+*.out
+
+# Go workspace file
+go.work
+
+# Build artifacts
+bin/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+*.coverprofile
+coverage.html
