@@ -74,8 +74,6 @@ flowa run hello.flowa
 
 ### Interactive REPL
 
-### Interactive REPL
-
 ```bash
 flowa repl
 ```
@@ -89,6 +87,37 @@ function
 10
 >>> 10 |> double() |> double()
 40
+```
+
+### Language Insights & Tooling
+
+Flowa ships with exploratory commands so you can treat your scripts as living pipelines:
+
+```bash
+# Print version + build metadata
+flowa --version
+
+# Summarize functions and pipeline chains inside a script
+flowa inspect examples/pipeline.flowa
+
+# Show only pipeline chains (great for docs / reviews)
+flowa pipelines examples/pipeline.flowa
+
+# Dump the parsed AST to understand how the compiler sees your code
+flowa ast examples/hello.flowa
+
+# Need a quick refresher on commands?
+flowa help
+```
+
+Example inspector output:
+
+```
+Functions (2)
+  · def square(x)
+  · def increment(x)
+Pipelines (1)
+  · Pipeline 1: 5 |> increment() |> square()
 ```
 
 ## Language Syntax
@@ -190,7 +219,7 @@ result = 5 |> double()  # 10
 flowa examples/fibonacci.flowa
 ```
 
-> **Note**: Conditional statements (`if`/`else`) are defined in the AST but not yet fully working in the  interpreter. Coming in next update!
+> **Note**: Conditional statements (`if`/`else`) are defined in the AST but not yet fully working in the interpreter. Coming in next update!
 
 ## Development
 
