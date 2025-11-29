@@ -1,102 +1,62 @@
 # Flowa Language Documentation
 
-Welcome to the official documentation for **Flowa**, the pipeline-first programming language.
-
-## 🚀 Getting Started
-
-### Running Code
-There are three ways to run Flowa code:
-
-1.  **Run a Script**:
-    ```bash
-    flowa my_script.flowa
-    ```
-
-2.  **Interactive REPL**:
-    ```bash
-    flowa repl
-    ```
-
-3.  **Evaluate Expression**:
-    ```bash
-    flowa eval 'print(10 |> double())'
-    ```
+Welcome to the reference documentation for **Flowa**, the pipeline‑first
+language. This document focuses on the _language itself_; for installation and
+CLI usage, see `QUICKSTART.md` and `README.md`.
 
 ---
 
-## 🔑 Keywords & Syntax
+## 1. Core Concepts
 
-### Functions (`def`)
-Define functions using `def` and indentation.
+- **Indentation‑based syntax** – Blocks are defined by indentation, not braces.
+- **Expressions everywhere** – Most constructs are expression‑oriented and can
+  be combined freely.
+- **Pipeline operator (`|>`)** – Passes the value on the left as the **first
+  argument** to the function on the right.
+
+### 1.1 Functions (`def`)
+
 ```python
 def add(x, y):
     return x + y
+
+result = add(5, 7)
+print(result)
 ```
 
-### Pipeline Operator (`|>`)
-Pass the result of the left expression as the *first argument* to the function on the right.
+### 1.2 Pipeline operator (`|>`)
+
 ```python
+def increment(x):
+    return x + 1
+
+def square(x):
+    return x * x
+
 # Equivalent to: square(increment(5))
 result = 5 |> increment() |> square()
+print(result)  # 36
 ```
 
-### Return (`return`)
-Return a value from a function.
-```python
-def greet(name):
-    return "Hello " + name
-```
+### 1.3 Assignments & values
 
-### Assignments
-Assign values to variables.
 ```python
 x = 10
-y = x * 2
+y = 20
+name = "Flowa"
+is_active = True
+nothing = None
 ```
 
 ---
 
-## 🛠 Built-in Functions
+## 2. Control Flow
 
-Flowa comes with a set of useful built-in functions available globally.
-
-### `print(args...)`
-Prints values to the standard output.
-```python
-print("Hello World")
-print(10, 20, 30)
-```
-
-### `input(prompt)`
-Reads a line of text from the user.
-```python
-print("Enter your name:")
-name = input()
-```
-
-### `type(object)`
-Returns the type of an object (e.g., `INTEGER`, `FUNCTION`).
-```python
-t = type(123)
-print(t)  # Output: INTEGER
-```
-
-### `exit(code)`
-Terminates the program with the specified exit code.
-```python
-exit(0)  # Success
-exit(1)  # Error
-```
-
----
-
-## 🔀 Control Flow
-
-### `if` / `elif` / `else`
-Conditional branching with Pythonic syntax.
+### 2.1 `if` / `elif` / `else`
 
 ```python
 x = 10
+
 if x > 10:
     print("Greater than 10")
 elif x == 10:
@@ -105,75 +65,177 @@ else:
     print("Less than 10")
 ```
 
+### 2.2 `while`
+
+```python
+i = 0
+while i < 3:
+    print(i)
+    i = i + 1
+```
+
+### 2.3 `for` with `range`
+
+```python
+for i in range(3):
+    print(i)
+```
+
+The built‑in `range(n)` returns an array `[0, 1, ..., n-1]`.
+
 ---
 
-## 💎 Unique Flowa Keywords
+## 3. Data Types
 
-These built-in functions are designed specifically for the **Pipeline-First** philosophy.
+- **INTEGER** – 64‑bit integers.
+- **STRING** – UTF‑8 strings.
+- **BOOLEAN** – `True` / `False`.
+- **NULL** – `None` in source maps to a `NULL` value.
+- **ARRAY** – Ordered list of values.
+- **MAP** – Key/value map.
+- **FUNCTION** / **BUILTIN** – User and built‑in functions.
+- **TASK** – Result of `spawn` (lightweight async surface).
+- **STRUCT_INSTANCE** – Simple records created by `type`.
+- **MODULE** – Values created by `module` declarations.
 
-### `tap(function)`
-Executes a function with the current value as an argument, but returns the *original value*. This allows you to "tap" into a pipeline for side effects (like logging) without breaking the flow.
+### 3.1 Arrays
 
-**Demo:**
+```python
+nums = [1, 2, 3]
+print(len(nums))  # 3
+first = first(nums)
+last_item = last(nums)
+rest_items = rest(nums)
+```
+
+### 3.2 Maps
+
+```python
+user = { "name": "Ada", "age": 32 }
+print(len(user))  # 2
+```
+
+### 3.3 Structs (`type`)
+
+```python
+type Point:
+    x
+    y
+
+p = Point(10, 20)
+print(p)  # Point(x=10, y=20)
+```
+
+### 3.4 Modules (`module`)
+
+```python
+module Math:
+    def square(n):
+        return n * n
+
+    pi = 3
+
+print(Math.pi)
+```
+
+---
+
+## 4. Built‑ins
+
+### 4.1 Core
+
+- **`print(args...)`** – Print any number of values.
+- **`len(x)`** – Length of string, array, or map.
+- **`first(array)` / `last(array)` / `rest(array)`** – Basic array helpers.
+- **`push(array, value)`** – Returns a new array with `value` appended.
+- **`range(n)`** – Returns `[0, 1, ..., n‑1]`.
+
+### 4.2 Utility & debugging
+
+- **`min(a, b)` / `max(a, b)`** – Integer min/max.
+- **`tap(fn)`** – In pipelines, call `fn` with the current value but return
+  the original value.
+- **`inspect(x)`** – Prints `[DEBUG] Type: T, Value: V` and returns `x`.
+
+Example:
+
 ```python
 def double(x):
     return x * 2
 
-# Print the value '5' but pass '5' to double()
-result = 5 |> tap(print) |> double()
-# Output: 5
-# result = 10
+value = 5 |> tap(print) |> double() |> inspect()
 ```
 
-### `inspect()`
-Prints debug information (Type and Value) about the current item in the pipeline and passes it through unchanged.
+### 4.3 Async surface (`spawn` / `await`)
 
-**Demo:**
+Flowa exposes a minimal async surface. In the current interpreter tasks are
+evaluated eagerly, but the syntax is future‑proofed for a richer runtime.
+
 ```python
-# Debug the intermediate value
-result = 10 |> double() |> inspect() |> double()
-# Output: [DEBUG] Type: INTEGER, Value: 20
-# result = 40
+async def async_task(n):
+    return n * 2
+
+task = spawn async_task(10)
+result = await task
+print(result)
+```
+
+### 4.4 HTTP helpers
+
+The `examples/server.flowa` script showcases tiny HTTP helpers that make it
+easy to spin up demo endpoints:
+
+- **`response(status, body)`** – Construct a simple HTTP response object.
+- **`route(method, path, handler)`** – Register a request handler.
+- **`listen(port)`** – Start an HTTP server on the given port.
+
+```python
+def hello(req):
+    return response(200, "Hello World")
+
+route("GET", "/hello", hello)
+listen(8080)
 ```
 
 ---
 
-## 🧮 Utility Functions
+## 5. Operators
 
-### `min(a, b)` / `max(a, b)`
-Returns the minimum or maximum of two integers.
-
-```python
-low = min(10, 20)  # 10
-high = max(10, 20) # 20
-```
-
----
-
-## 🧮 Operators
-
-| Operator | Description | Example |
-| :--- | :--- | :--- |
-| `+` | Addition | `10 + 5` |
-| `-` | Subtraction | `10 - 5` |
-| `*` | Multiplication | `10 * 5` |
-| `/` | Division | `10 / 2` |
-| `( )` | Grouping | `(10 + 5) * 2` |
+| Operator          | Description      | Example           |
+| ----------------- | ---------------- | ----------------- |
+| `+`               | Addition         | `10 + 5`          |
+| `-`               | Subtraction      | `10 - 5`          |
+| `*`               | Multiplication   | `10 * 5`          |
+| `/`               | Division         | `10 / 2`          |
+| `==`              | Equality         | `x == 10`         |
+| `!=`              | Inequality       | `x != y`          |
+| `<` `>` `<=` `>=` | Comparisons      | `x < y`, `x >= y` |
+| `!`               | Boolean negation | `!False`          |
+| `( )`             | Grouping         | `(10 + 5) * 2`    |
 
 ---
 
-## 📝 Example
-
-Here is a complete example combining these features:
+## 6. Putting It Together
 
 ```python
-def square(x):
-    return x * x
+print("Assignments:")
+x = 10
+y = 20
+print(x, y)
 
-def main():
-    print("Calculating square...")
-    result = 10 |> square()
-    print("Result:", result)
+print("Pipelines:")
+def double(n):
+    return n * 2
 
-main()
+def increment(n):
+    return n + 1
+
+res = 5 |> double() |> increment()
+print(res)
+
+print("Loops:")
+for i in range(3):
+    print(i)
 ```
+
+For more end‑to‑end examples, explore the `examples/` directory.

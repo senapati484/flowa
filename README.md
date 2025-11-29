@@ -1,18 +1,30 @@
-# Flowa
+<p align="center">
+  <img src="https://github.com/senapati484/flowa/blob/main/data/flowa-bg-removed.png" alt="Flowa Logo" width="140" />
+</p>
 
-<img src="https://github.com/senapati484/flowa/blob/main/data/flowa-bg-removed.png" alt="Flowa Logo" width="100">
+<h1 align="center">Flowa</h1>
 
-> **"Python's readability meets Go's performance—built for the pipeline era."**
+<p align="center"><strong>Pipeline‑first language for modern data and backend flows.</strong></p>
 
-**Flowa** is a next-generation scripting language designed for developers who love clean syntax but demand raw speed. It introduces a **pipeline-first architecture** that makes data transformation as natural as thought itself.
+<p align="center">
+  <em>Python‑style readability. Go‑powered speed. Built for the pipeline era.</em>
+</p>
 
-## 🚀 The Flowa Difference (USP)
+---
+
+**Flowa** is a small but expressive programming language focused on one idea:
+make **data flow** the center of your code. The pipeline operator `|>` turns
+deeply nested calls into readable, linear flows that are perfect for scripting,
+services, and experimentation.
+
+## 🚀 Why Flowa?
 
 Most languages force you to choose between **simplicity** (Python) and **performance** (Go/Rust). Flowa eliminates this compromise.
 
 ### 🌟 Unique Selling Points:
 
-1.  **Pipeline-First Design**: The `|>` operator isn't just sugar—it's the core primitive. Data flows linearly, eliminating nested function hell.
+1.  **Pipeline‑first design** – The `|>` operator isn't just sugar; it's the
+    core primitive. Data flows linearly, eliminating nested function hell.
 
     ```python
     # Traditional
@@ -22,28 +34,30 @@ Most languages force you to choose between **simplicity** (Python) and **perform
     image |> resize() |> optimize() |> save()
     ```
 
-2.  **Zero-Boilerplate Concurrency** (Coming Phase 1):
-    Spawn thousands of lightweight tasks without complex async/await coloring or thread management.
+2.  **Zero‑boilerplate async (MVP semantics today)** – `spawn` and `await`
+    give you a task abstraction for simple concurrency experiments. The
+    current interpreter runs tasks synchronously but preserves the language
+    surface so the runtime can evolve.
 
-    ```python
-    urls |> map(fetch) |> spawn() |> collect()
-    ```
-
-3.  **The "Goldilocks" Syntax**:
+3.  **The "Goldilocks" syntax**:
 
     - Indentation-based (like Python) for readability.
     - Static typing potential (like Go) for reliability.
     - Minimalist keywords for zero learning curve.
 
-4.  **Single-Binary Toolchain**:
-    No virtual environments, no complex build tools. One binary (`flowa`) does it all: run, repl, test, fmt.
+4.  **Single‑binary toolchain** – No virtual environments, no complex build
+    tools. One binary (`flowa`) does it all: run scripts, REPL, inspect
+    pipelines, print ASTs.
 
-## ✨ Key Features
+## ✨ Highlights
 
-- **Pipeline Operator (`|>`)**: Compose functions effortlessly.
-- **Clean Syntax**: No semicolons, no braces, just clean indentation.
-- **Go-Powered**: Built on the robust Go runtime for speed and stability.
-- **Developer Experience**: Built-in REPL, helpful error messages, and instant startup.
+- **Pipeline operator (`|>`)** – Compose transformations in a straight line.
+- **Clean, indentation‑based syntax** – Instantly familiar to Python users.
+- **Go‑powered implementation** – A tiny, fast single binary.
+- **REPL & tooling** – `repl`, `ast`, `inspect`, and `pipelines` help you
+  explore programs as data flows.
+- **HTTP helpers (MVP)** – Tiny `route`, `response`, `listen` helpers make it
+  easy to spin up demo servers in pure Flowa.
 
 ## 📦 Installation
 
@@ -95,9 +109,11 @@ sudo cp flowa /usr/local/bin/
 flowa examples/hello.flowa
 ```
 
-## Usage
+---
 
-### Run a Flowa Script
+## 🧪 First Steps
+
+### Run a Flowa script
 
 ```bash
 # Simple: just provide the filename
@@ -124,9 +140,10 @@ function
 40
 ```
 
-### Language Insights & Tooling
+### Language insights & tooling
 
-Flowa ships with exploratory commands so you can treat your scripts as living pipelines:
+Flowa ships with exploratory commands so you can treat your scripts as living
+pipelines:
 
 ```bash
 # Print version + build metadata
@@ -254,7 +271,45 @@ result = 5 |> double()  # 10
 flowa examples/fibonacci.flowa
 ```
 
-> **Note**: Conditional statements (`if`/`else`) are defined in the AST but not yet fully working in the interpreter. Coming in next update!
+### HTTP Helper
+
+Coming soon!
+
+## Installation
+
+### macOS-Specific: Homebrew Installation
+
+For Mac users, you can also use Homebrew (coming soon):
+
+```bash
+# Future: Once in Homebrew
+brew tap senapati484/flowa
+brew install flowa
+
+# Current: Local formula
+brew install --formula ./flowa.rb
+```
+
+See [INSTALL_MAC.md](INSTALL_MAC.md) for detailed macOS instructions.
+
+### Manual Installation
+
+```bash
+# Build the binary
+make build
+
+# Install globally (requires sudo)
+make install
+
+# Or install manually
+sudo cp flowa /usr/local/bin/
+```
+
+### Verify Installation
+
+```bash
+flowa examples/hello.flowa
+```
 
 ## Development
 
