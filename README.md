@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/senapati484/flowa/blob/main/data/flowa-bg-removed.png" alt="Flowa Logo" width="140" />
+  <img src="https://github.com/senapati484/flowa/blob/main/data/flowa-bg-removed.png" alt="Flowa Logo" width="200" />
 </p>
 
 <h1 align="center">Flowa</h1>
