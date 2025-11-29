@@ -10,6 +10,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -77,6 +80,8 @@ func main() {
 		printVersion()
 	case "help":
 		printHelp()
+	case "uninstall":
+		uninstallFlowa()
 	default:
 		fmt.Printf("Unknown command: %s\n\n", command)
 		printHelp()
@@ -91,6 +96,7 @@ func printUsage() {
 	fmt.Println("  flowa repl               Start interactive REPL")
 	fmt.Println("  flowa run <file>         Run a Flowa script (explicit)")
 	fmt.Println("  flowa eval '<code>'      Evaluate a Flowa expression")
+	fmt.Println("  flowa uninstall          Remove the Flowa binary from this machine")
 	fmt.Println("  flowa version            Show version information")
 	fmt.Println("  flowa help               Show this help message")
 	fmt.Println("\nFlags:")
@@ -254,12 +260,61 @@ func printHelp() {
 	fmt.Println("  flowa inspect <file>    Summarize functions and pipelines")
 	fmt.Println("  flowa pipelines <file>  Render pipeline chains")
 	fmt.Println("  flowa ast <file>        Print the program AST")
+	fmt.Println("  flowa uninstall         Remove the globally installed binary")
 	fmt.Println("  flowa version           Display build metadata")
 	fmt.Println("  flowa help              Show this help message")
 	fmt.Println()
 	fmt.Println("Global flags:")
 	fmt.Println("  --help, -h              Show help")
 	fmt.Println("  --version, -v           Show version")
+}
+
+func uninstallFlowa() {
+	binaryName := "flowa"
+	if runtime.GOOS == "windows" {
+		binaryName += ".exe"
+	}
+
+	var candidatePaths []string
+	if existingPath, err := exec.LookPath("flowa"); err == nil {
+		candidatePaths = append(candidatePaths, existingPath)
+	}
+
+	switch runtime.GOOS {
+	case "windows":
+		candidatePaths = append(candidatePaths,
+			filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", "Flowa", binaryName),
+			filepath.Join(os.Getenv("ProgramFiles"), "Flowa", binaryName),
+		)
+	default:
+		candidatePaths = append(candidatePaths,
+			"/usr/local/bin/"+binaryName,
+			"/usr/bin/"+binaryName,
+			filepath.Join(os.Getenv("HOME"), "go", "bin", "flowa"),
+		)
+	}
+
+	removed := false
+	for _, path := range candidatePaths {
+		if path == "" {
+			continue
+		}
+		if _, err := os.Stat(path); err == nil {
+			if err := os.Remove(path); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to remove %s: %v\n", path, err)
+				os.Exit(1)
+			}
+			fmt.Printf("✓ Removed %s\n", path)
+			removed = true
+		}
+	}
+
+	if !removed {
+		fmt.Println("No installed flowa binary was found in common locations.")
+		return
+	}
+
+	fmt.Println("Flowa uninstalled successfully.")
 }
 
 func evalCode(code string) {

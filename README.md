@@ -61,53 +61,39 @@ Most languages force you to choose between **simplicity** (Python) and **perform
 
 ## 📦 Installation
 
-### Quick Install (Linux/macOS)
+### Quick Start
+
+Choose your platform for detailed installation instructions:
+
+- **macOS**: [macOS Installation Guide](INSTALL_MAC_LINUX.md#macos-installation-methods)
+- **Linux**: [Linux Installation Guide](INSTALL_MAC_LINUX.md#linux-installation-methods)
+- **Windows**: [Windows Installation Guide](INSTALL_WINDOWS.md)
+
+### Quick Install (macOS/Linux)
 
 ```bash
-# Clone the repository
-git clone https://github.com/senapati484/flowa.git
-cd flowa
+# Clone and install
+curl -L https://github.com/senapati484/flowa/raw/main/install.sh | sh
 
-# Run the installer
-chmod +x install.sh
-./install.sh
+# Verify installation
+flowa --version
 ```
 
-This will build and install `flowa` to `/usr/local/bin`, making it available globally.
-
-### macOS-Specific: Homebrew Installation
-
-For Mac users, you can also use Homebrew (coming soon):
+### Homebrew (macOS)
 
 ```bash
-# Future: Once in Homebrew
 brew tap senapati484/flowa
 brew install flowa
-
-# Current: Local formula
-brew install --formula ./flowa.rb
-```
-
-See [INSTALL_MAC.md](INSTALL_MAC.md) for detailed macOS instructions.
-
-### Manual Installation
-
-```bash
-# Build the binary
-make build
-
-# Install globally (requires sudo)
-make install
-
-# Or install manually
-sudo cp flowa /usr/local/bin/
 ```
 
 ### Verify Installation
 
 ```bash
-flowa examples/hello.flowa
+flowa --version
+flowa run examples/hello.flowa
 ```
+
+For more installation options and troubleshooting, see the full [Installation Guide](INSTALL_MAC_LINUX.md).
 
 ---
 
@@ -274,42 +260,6 @@ flowa examples/fibonacci.flowa
 ### HTTP Helper
 
 Coming soon!
-
-## Installation
-
-### macOS-Specific: Homebrew Installation
-
-For Mac users, you can also use Homebrew (coming soon):
-
-```bash
-# Future: Once in Homebrew
-brew tap senapati484/flowa
-brew install flowa
-
-# Current: Local formula
-brew install --formula ./flowa.rb
-```
-
-See [INSTALL_MAC.md](INSTALL_MAC.md) for detailed macOS instructions.
-
-### Manual Installation
-
-```bash
-# Build the binary
-make build
-
-# Install globally (requires sudo)
-make install
-
-# Or install manually
-sudo cp flowa /usr/local/bin/
-```
-
-### Verify Installation
-
-```bash
-flowa examples/hello.flowa
-```
 
 ## Development
 
