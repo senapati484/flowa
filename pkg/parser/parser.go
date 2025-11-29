@@ -18,6 +18,7 @@ const (
 	PRODUCT     // *
 	PREFIX      // -X or !X
 	CALL        // myFunction(X)
+	MEMBER      // object.property
 )
 
 var precedences = map[token.TokenType]int{
@@ -30,6 +31,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
+	token.DOT:      MEMBER,
 	token.PIPE:     PIPELINE,
 }
 
@@ -58,12 +60,18 @@ func New(l *lexer.Lexer) *Parser {
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
+	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
+	p.registerPrefix(token.LBRACE, p.parseMapLiteral)
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.SPAWN, p.parseSpawnExpression)
+	p.registerPrefix(token.SPAWN, p.parseSpawnExpression)
 	p.registerPrefix(token.AWAIT, p.parseAwaitExpression)
+	p.registerPrefix(token.TRUE, p.parseBoolean)
+	p.registerPrefix(token.FALSE, p.parseBoolean)
+	p.registerPrefix(token.NONE, p.parseNull)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
@@ -76,6 +84,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.PIPE, p.parsePipelineExpression)
+	p.registerInfix(token.DOT, p.parseMemberExpression)
 
 	// Read two tokens, so curToken and peekToken are both set
 	p.nextToken()
@@ -115,6 +124,16 @@ func (p *Parser) parseStatement() ast.Statement {
 			return p.parseFunctionStatement()
 		}
 		return nil
+	case token.WHILE:
+		return p.parseWhileStatement()
+	case token.FOR:
+		return p.parseForStatement()
+	case token.MODULE:
+		return p.parseModuleStatement()
+	case token.IMPORT:
+		return p.parseImportStatement()
+	case token.TYPE:
+		return p.parseTypeStatement()
 	case token.NEWLINE:
 		return nil
 	case token.IDENT:
@@ -243,6 +262,127 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	return block
 }
 
+func (p *Parser) parseWhileStatement() *ast.WhileStatement {
+	stmt := &ast.WhileStatement{Token: p.curToken}
+
+	p.nextToken()
+	stmt.Condition = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.COLON) {
+		return nil
+	}
+
+	if !p.expectPeek(token.NEWLINE) {
+		return nil
+	}
+
+	stmt.Body = p.parseBlockStatement()
+
+	return stmt
+}
+
+func (p *Parser) parseForStatement() *ast.ForStatement {
+	stmt := &ast.ForStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Iterator = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	if !p.expectPeek(token.IN) {
+		return nil
+	}
+
+	p.nextToken()
+	stmt.Value = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.COLON) {
+		return nil
+	}
+
+	if !p.expectPeek(token.NEWLINE) {
+		return nil
+	}
+
+	stmt.Body = p.parseBlockStatement()
+
+	return stmt
+}
+
+func (p *Parser) parseModuleStatement() *ast.ModuleStatement {
+	stmt := &ast.ModuleStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	if !p.expectPeek(token.COLON) {
+		return nil
+	}
+
+	if !p.expectPeek(token.NEWLINE) {
+		return nil
+	}
+
+	stmt.Body = p.parseBlockStatement()
+
+	return stmt
+}
+
+func (p *Parser) parseImportStatement() *ast.ImportStatement {
+	stmt := &ast.ImportStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.STRING) {
+		return nil
+	}
+
+	stmt.Path = &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
+
+	if p.peekTokenIs(token.NEWLINE) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseTypeStatement() *ast.TypeStatement {
+	stmt := &ast.TypeStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	if !p.expectPeek(token.COLON) {
+		return nil
+	}
+
+	if !p.expectPeek(token.NEWLINE) {
+		return nil
+	}
+
+	if !p.expectPeek(token.INDENT) {
+		return nil
+	}
+	p.nextToken() // consume INDENT
+
+	// Parse field names
+	stmt.Fields = []*ast.Identifier{}
+	for !p.curTokenIs(token.DEDENT) && !p.curTokenIs(token.EOF) {
+		if p.curTokenIs(token.IDENT) {
+			field := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+			stmt.Fields = append(stmt.Fields, field)
+		}
+		p.nextToken()
+	}
+
+	return stmt
+}
+
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 
@@ -301,6 +441,18 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return lit
 }
 
+func (p *Parser) parseStringLiteral() ast.Expression {
+	return &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.Boolean{Token: p.curToken, Value: p.curTokenIs(token.TRUE)}
+}
+
+func (p *Parser) parseNull() ast.Expression {
+	return &ast.NullLiteral{Token: p.curToken}
+}
+
 func (p *Parser) parsePrefixExpression() ast.Expression {
 	expression := &ast.PrefixExpression{
 		Token:    p.curToken,
@@ -355,13 +507,25 @@ func (p *Parser) parseIfExpression() ast.Expression {
 
 	expression.Consequence = p.parseBlockStatement()
 
-	// TODO: Handle ELSE
-	// We need to check if next token after DEDENT is ELSE?
-	// But parseBlockStatement consumes DEDENT.
-	// So peekToken should be ELSE if present.
+	// Handle ELIF and ELSE
+	// Since Flowa is indentation based, ELIF/ELSE usually appear after DEDENT of the previous block.
+	// However, parseBlockStatement consumes the DEDENT.
+	// So we just check the next token.
+
+	if p.peekTokenIs(token.ELIF) {
+		p.nextToken() // consume ELIF
+		// Parse as a new IfExpression (recursively)
+		// We wrap it in an ExpressionStatement to fit the Statement interface
+		elifExpr := p.parseIfExpression()
+		expression.Alternative = &ast.ExpressionStatement{
+			Token:      elifExpr.(*ast.IfExpression).Token,
+			Expression: elifExpr,
+		}
+		return expression
+	}
 
 	if p.peekTokenIs(token.ELSE) {
-		p.nextToken()
+		p.nextToken() // consume ELSE
 		if !p.expectPeek(token.COLON) {
 			return nil
 		}
@@ -428,6 +592,57 @@ func (p *Parser) parseAwaitExpression() ast.Expression {
 	expression := &ast.AwaitExpression{Token: p.curToken}
 	p.nextToken()
 	expression.Value = p.parseExpression(LOWEST)
+	return expression
+}
+
+func (p *Parser) parseMapLiteral() ast.Expression {
+	mapLiteral := &ast.MapLiteral{Token: p.curToken, Pairs: []ast.MapPair{}}
+
+	if p.peekTokenIs(token.RBRACE) {
+		p.nextToken()
+		return mapLiteral
+	}
+
+	for {
+		p.nextToken()
+		key := p.parseExpression(LOWEST)
+		if key == nil {
+			return nil
+		}
+
+		if !p.expectPeek(token.COLON) {
+			return nil
+		}
+
+		p.nextToken()
+		value := p.parseExpression(LOWEST)
+		if value == nil {
+			return nil
+		}
+
+		mapLiteral.Pairs = append(mapLiteral.Pairs, ast.MapPair{Key: key, Value: value})
+
+		if !p.peekTokenIs(token.COMMA) {
+			break
+		}
+		p.nextToken()
+	}
+
+	if !p.expectPeek(token.RBRACE) {
+		return nil
+	}
+
+	return mapLiteral
+}
+
+func (p *Parser) parseMemberExpression(object ast.Expression) ast.Expression {
+	expression := &ast.MemberExpression{Token: p.curToken, Object: object}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	expression.Property = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 	return expression
 }
 

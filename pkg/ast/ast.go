@@ -134,6 +134,90 @@ func (as *AssignmentStatement) String() string {
 	return out.String()
 }
 
+type WhileStatement struct {
+	Token     token.Token // 'while'
+	Condition Expression
+	Body      *BlockStatement
+}
+
+func (ws *WhileStatement) statementNode()       {}
+func (ws *WhileStatement) TokenLiteral() string { return ws.Token.Literal }
+func (ws *WhileStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("while ")
+	out.WriteString(ws.Condition.String())
+	out.WriteString(":")
+	out.WriteString(ws.Body.String())
+	return out.String()
+}
+
+type ForStatement struct {
+	Token    token.Token // 'for'
+	Iterator *Identifier
+	Value    Expression // The thing being iterated over (e.g. range(10))
+	Body     *BlockStatement
+}
+
+func (fs *ForStatement) statementNode()       {}
+func (fs *ForStatement) TokenLiteral() string { return fs.Token.Literal }
+func (fs *ForStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("for ")
+	out.WriteString(fs.Iterator.String())
+	out.WriteString(" in ")
+	out.WriteString(fs.Value.String())
+	out.WriteString(":")
+	out.WriteString(fs.Body.String())
+	return out.String()
+}
+
+type ModuleStatement struct {
+	Token token.Token // 'module'
+	Name  *Identifier
+	Body  *BlockStatement
+}
+
+func (ms *ModuleStatement) statementNode()       {}
+func (ms *ModuleStatement) TokenLiteral() string { return ms.Token.Literal }
+func (ms *ModuleStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("module ")
+	out.WriteString(ms.Name.String())
+	out.WriteString(":")
+	out.WriteString(ms.Body.String())
+	return out.String()
+}
+
+type ImportStatement struct {
+	Token token.Token // 'import'
+	Path  *StringLiteral
+}
+
+func (is *ImportStatement) statementNode()       {}
+func (is *ImportStatement) TokenLiteral() string { return is.Token.Literal }
+func (is *ImportStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("import ")
+	out.WriteString(is.Path.String())
+	return out.String()
+}
+
+type TypeStatement struct {
+	Token  token.Token // 'type'
+	Name   *Identifier
+	Fields []*Identifier
+}
+
+func (ts *TypeStatement) statementNode()       {}
+func (ts *TypeStatement) TokenLiteral() string { return ts.Token.Literal }
+func (ts *TypeStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("type ")
+	out.WriteString(ts.Name.String())
+	out.WriteString(":")
+	return out.String()
+}
+
 // Expressions
 
 type Identifier struct {
@@ -153,6 +237,32 @@ type IntegerLiteral struct {
 func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+func (sl *StringLiteral) expressionNode()      {}
+func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
+func (sl *StringLiteral) String() string       { return "\"" + sl.Value + "\"" }
+
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
+
+func (b *Boolean) expressionNode()      {}
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
+func (b *Boolean) String() string       { return b.Token.Literal }
+
+type NullLiteral struct {
+	Token token.Token
+}
+
+func (n *NullLiteral) expressionNode()      {}
+func (n *NullLiteral) TokenLiteral() string { return n.Token.Literal }
+func (n *NullLiteral) String() string       { return n.Token.Literal }
 
 type PrefixExpression struct {
 	Token    token.Token // The prefix token, e.g. ! or -
@@ -233,7 +343,7 @@ type IfExpression struct {
 	Token       token.Token // 'if'
 	Condition   Expression
 	Consequence *BlockStatement
-	Alternative *BlockStatement
+	Alternative Statement // Can be BlockStatement (else) or ExpressionStatement containing IfExpression (elif)
 }
 
 func (ie *IfExpression) expressionNode()      {}
@@ -276,5 +386,45 @@ func (ae *AwaitExpression) String() string {
 	var out bytes.Buffer
 	out.WriteString("await ")
 	out.WriteString(ae.Value.String())
+	return out.String()
+}
+
+type MapLiteral struct {
+	Token token.Token // '{'
+	Pairs []MapPair
+}
+
+type MapPair struct {
+	Key   Expression
+	Value Expression
+}
+
+func (ml *MapLiteral) expressionNode()      {}
+func (ml *MapLiteral) TokenLiteral() string { return ml.Token.Literal }
+func (ml *MapLiteral) String() string {
+	var out bytes.Buffer
+	pairs := make([]string, 0, len(ml.Pairs))
+	for _, pair := range ml.Pairs {
+		pairs = append(pairs, pair.Key.String()+": "+pair.Value.String())
+	}
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+	return out.String()
+}
+
+type MemberExpression struct {
+	Token    token.Token // '.'
+	Object   Expression
+	Property *Identifier
+}
+
+func (me *MemberExpression) expressionNode()      {}
+func (me *MemberExpression) TokenLiteral() string { return me.Token.Literal }
+func (me *MemberExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString(me.Object.String())
+	out.WriteString(".")
+	out.WriteString(me.Property.String())
 	return out.String()
 }

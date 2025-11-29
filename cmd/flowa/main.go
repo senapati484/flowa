@@ -16,51 +16,63 @@ import (
 const PROMPT = ">>> "
 
 func main() {
-	args := os.Args[1:]
-	if len(args) == 0 {
-		printHelp()
-		os.Exit(1)
+	if len(os.Args) < 2 {
+		printUsage()
+		os.Exit(0)
 	}
 
-	if handled := handleGlobalFlags(args); handled {
+	command := os.Args[1]
+
+	// Handle flags
+	switch command {
+	case "--version", "-v", "version":
+		printVersion()
+		return
+	case "--help", "-h", "help":
+		printHelp()
 		return
 	}
 
-	command := args[0]
-	remaining := args[1:]
-
-	if strings.HasSuffix(command, ".flowa") {
+	// If the first argument ends with .flowa, treat it as a file to run
+	if len(command) > 6 && command[len(command)-6:] == ".flowa" {
 		runFile(command)
 		return
 	}
 
+	// Handle subcommands
 	switch command {
 	case "repl":
 		startREPL()
 	case "run":
-		if len(remaining) == 0 {
+		if len(os.Args) < 3 {
 			fmt.Println("Usage: flowa run <file>")
 			os.Exit(1)
 		}
-		runFile(remaining[0])
+		runFile(os.Args[2])
+	case "eval":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: flowa eval '<code>'")
+			os.Exit(1)
+		}
+		evalCode(os.Args[2])
 	case "inspect":
-		if len(remaining) == 0 {
+		if len(os.Args) < 3 {
 			fmt.Println("Usage: flowa inspect <file>")
 			os.Exit(1)
 		}
-		inspectFile(remaining[0])
+		inspectFile(os.Args[2])
 	case "pipelines":
-		if len(remaining) == 0 {
+		if len(os.Args) < 3 {
 			fmt.Println("Usage: flowa pipelines <file>")
 			os.Exit(1)
 		}
-		printPipelineOverview(remaining[0])
+		printPipelineOverview(os.Args[2])
 	case "ast":
-		if len(remaining) == 0 {
+		if len(os.Args) < 3 {
 			fmt.Println("Usage: flowa ast <file>")
 			os.Exit(1)
 		}
-		printProgramAST(remaining[0])
+		printProgramAST(os.Args[2])
 	case "version":
 		printVersion()
 	case "help":
@@ -70,6 +82,20 @@ func main() {
 		printHelp()
 		os.Exit(1)
 	}
+}
+
+func printUsage() {
+	fmt.Println("Flowa Programming Language v" + version.Version)
+	fmt.Println("\nUsage:")
+	fmt.Println("  flowa <file.flowa>       Run a Flowa script")
+	fmt.Println("  flowa repl               Start interactive REPL")
+	fmt.Println("  flowa run <file>         Run a Flowa script (explicit)")
+	fmt.Println("  flowa eval '<code>'      Evaluate a Flowa expression")
+	fmt.Println("  flowa version            Show version information")
+	fmt.Println("  flowa help               Show this help message")
+	fmt.Println("\nFlags:")
+	fmt.Println("  -v, --version            Show version information")
+	fmt.Println("  -h, --help               Show this help message")
 }
 
 func startREPL() {
@@ -236,18 +262,28 @@ func printHelp() {
 	fmt.Println("  --version, -v           Show version")
 }
 
-func handleGlobalFlags(args []string) bool {
-	for _, arg := range args {
-		switch arg {
-		case "--version", "-v":
-			printVersion()
-			return true
-		case "--help", "-h":
-			printHelp()
-			return true
+func evalCode(code string) {
+	l := lexer.New(code)
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	if len(p.Errors()) != 0 {
+		printParserErrors(os.Stderr, p.Errors())
+		os.Exit(1)
+	}
+
+	env := eval.NewEnvironment()
+	evaluated := eval.Eval(program, env)
+	if evaluated != nil {
+		if evaluated.Type() == "ERROR" {
+			fmt.Fprintf(os.Stderr, "%s\n", evaluated.Inspect())
+			os.Exit(1)
+		}
+		// Only print result if it's not NULL (like print function return)
+		if evaluated.Type() != "NULL" {
+			fmt.Println(evaluated.Inspect())
 		}
 	}
-	return false
 }
 
 func printParserErrors(out io.Writer, errors []string) {

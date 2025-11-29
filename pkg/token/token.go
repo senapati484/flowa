@@ -13,10 +13,9 @@ const (
 	NEWLINE = "NEWLINE"
 
 	// Identifiers & Literals
-	IDENT  = "IDENT"  // main, x, y
-	INT    = "INT"    // 123
-	FLOAT  = "FLOAT"  // 123.45
-	STRING = "STRING" // "hello"
+	IDENT  = "IDENT"
+	INT    = "INT"
+	STRING = "STRING"
 
 	// Operators
 	ASSIGN   = "="
@@ -35,24 +34,27 @@ const (
 	GTE    = ">="
 
 	// Delimiters
-	COMMA     = ","
-	COLON     = ":"
-	LPAREN    = "("
-	RPAREN    = ")"
-	LBRACE    = "{"
-	RBRACE    = "}"
-	LBRACKET  = "["
-	RBRACKET  = "]"
-	ARROW     = "->"
+	COMMA    = ","
+	COLON    = ":"
+	LPAREN   = "("
+	RPAREN   = ")"
+	LBRACE   = "{"
+	RBRACE   = "}"
+	LBRACKET = "["
+	RBRACKET = "]"
+	ARROW    = "->"
+	DOT      = "."
 
 	// Keywords
 	DEF    = "DEF"
 	ASYNC  = "ASYNC"
 	RETURN = "RETURN"
 	IF     = "IF"
+	ELIF   = "ELIF"
 	ELSE   = "ELSE"
 	TRUE   = "TRUE"
 	FALSE  = "FALSE"
+	NONE   = "NONE"
 	FOR    = "FOR"
 	WHILE  = "WHILE"
 	IN     = "IN"
@@ -79,9 +81,11 @@ var keywords = map[string]TokenType{
 	"async":  ASYNC,
 	"return": RETURN,
 	"if":     IF,
+	"elif":   ELIF,
 	"else":   ELSE,
-	"true":   TRUE,
-	"false":  FALSE,
+	"True":   TRUE,
+	"False":  FALSE,
+	"None":   NONE,
 	"for":    FOR,
 	"while":  WHILE,
 	"in":     IN,

@@ -1,0 +1,5 @@
+def hello(req):
+    return response(200, "Hello World")
+
+route("GET", "/hello", hello)
+listen(8080)
