@@ -11,6 +11,9 @@ brew install flowa
 
 # Or install from local formula
 brew install --formula ./flowa.rb
+
+# Or uninstall from Homebrew
+brew uninstall flowa
 ```
 
 ### Method 2: Universal Installer Script
@@ -23,6 +26,9 @@ cd flowa
 # Make the installer executable and run it
 chmod +x install.sh
 ./install.sh
+
+# Or uninstall using the CLI
+flowa uninstall
 ```
 
 ### Method 3: Using Make
