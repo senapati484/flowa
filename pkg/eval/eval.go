@@ -2,8 +2,10 @@ package eval
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"flowa/pkg/ast"
 )
@@ -104,6 +106,12 @@ type Task struct {
 
 func (t *Task) Type() string    { return "TASK" }
 func (t *Task) Inspect() string { return "task(" + t.Result.Inspect() + ")" }
+func (t *Task) Await() Object {
+	for !t.Done {
+		time.Sleep(1 * time.Millisecond)
+	}
+	return t.Result
+}
 
 // StructInstance is a simple record-like value created via `type` declarations.
 type StructInstance struct {
@@ -280,6 +288,35 @@ func NewEnvironment() *Environment {
 			}
 			defer resp.Body.Close()
 			return &String{Value: resp.Status}
+		},
+	}
+
+	env.store["async_http_get"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 1 {
+				return newError("wrong number of arguments. got=%d, want=1", len(args))
+			}
+			urlObj, ok := args[0].(*String)
+			if !ok {
+				return newError("argument to `async_http_get` must be STRING, got %s", args[0].Type())
+			}
+
+			task := &Task{Done: false}
+
+			go func() {
+				resp, err := http.Get(urlObj.Value)
+				if err != nil {
+					task.Result = &ErrorObj{Message: fmt.Sprintf("http error: %s", err)}
+					task.Done = true
+					return
+				}
+				defer resp.Body.Close()
+				body, _ := io.ReadAll(resp.Body)
+				task.Result = &String{Value: string(body)}
+				task.Done = true
+			}()
+
+			return task
 		},
 	}
 
@@ -948,11 +985,8 @@ func evalAwaitExpression(ae *ast.AwaitExpression, env *Environment) Object {
 	if !ok {
 		return newError("await can only be used on tasks, got %s", val.Type())
 	}
-	if !task.Done {
-		// For now everything is eager, so Done should always be true.
-		return NULL
-	}
-	return task.Result
+	// Block until the task has completed and return its result.
+	return task.Await()
 }
 
 func evalModuleStatement(ms *ast.ModuleStatement, env *Environment) Object {
