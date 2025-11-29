@@ -31,3 +31,6 @@ Thumbs.db
 # Coverage
 *.coverprofile
 coverage.html
+
+# previous python architecture
+legacy_prototype
