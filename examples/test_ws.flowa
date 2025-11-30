@@ -1,0 +1,30 @@
+# Test WebSocket Module
+
+def wsHandler(req):
+    print("WebSocket connection request")
+    conn = websocket.upgrade(req)
+    if conn == None:
+        print("Failed to upgrade")
+        return response.text("Failed to upgrade", 500)
+    
+    print("Client connected")
+    websocket.send(conn, "Welcome to Flowa WebSocket!")
+    
+    # Echo loop
+    while True:
+        msg = websocket.read(conn)
+        if msg == None:
+            print("Client disconnected")
+            break
+        print("Received:", msg)
+        websocket.send(conn, "Echo: " + msg)
+    
+    websocket.close(conn)
+    return None
+
+def homeHandler(req):
+    return response.html("<h1>WebSocket Server Running</h1>", 200)
+
+service WSServer on ":8080":
+    get "/ws" -> wsHandler
+    get "/" -> homeHandler

@@ -1,0 +1,25 @@
+# Test Email Sending
+# Sends a test email to verify SMTP configuration
+
+# Get SMTP credentials from environment
+smtp_host = config.env("SMTP_HOST", "")
+smtp_port = config.env("SMTP_PORT", "587")
+smtp_user = config.env("SMTP_USER", "")
+
+print("SMTP Configuration:")
+print("Host:", smtp_host)
+print("Port:", smtp_port)
+print("User:", smtp_user)
+print("")
+
+print("Sending test email to sayansenapati2544@gmail.com...")
+
+# Send test email with HTML
+email_html = "<html><body><h1 style='color: #4CAF50;'>Hello from Flowa!</h1><p>This is a test <strong>HTML email</strong> to verify that the mail module is working correctly.</p><h2>Features tested:</h2><ul><li>SMTP configuration via config.env()</li><li>HTML email support</li><li>Mail.send() function</li></ul><p style='color: #2196F3;'>If you're reading this with formatting, everything works! 🎉</p></body></html>"
+
+mail_data = {"to": "sayansenapati2544@gmail.com", "from": smtp_user, "subject": "Flowa Test Email", "html": email_html}
+result = mail.send(mail_data)
+
+print(result)
+print("Email sent!")
+print("Check sayansenapati2544@gmail.com inbox")

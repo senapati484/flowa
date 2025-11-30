@@ -63,6 +63,16 @@ const (
 	MODULE = "MODULE"
 	IMPORT = "IMPORT"
 	TYPE   = "TYPE"
+
+	// Server
+	SERVICE = "SERVICE"
+	ON      = "ON"
+	GET     = "GET"
+	POST    = "POST"
+	PUT     = "PUT"
+	DELETE  = "DELETE"
+	WS      = "WS"
+	USE     = "USE"
 )
 
 type Token struct {
@@ -77,23 +87,31 @@ func (t Token) String() string {
 }
 
 var keywords = map[string]TokenType{
-	"def":    DEF,
-	"async":  ASYNC,
-	"return": RETURN,
-	"if":     IF,
-	"elif":   ELIF,
-	"else":   ELSE,
-	"True":   TRUE,
-	"False":  FALSE,
-	"None":   NONE,
-	"for":    FOR,
-	"while":  WHILE,
-	"in":     IN,
-	"spawn":  SPAWN,
-	"await":  AWAIT,
-	"module": MODULE,
-	"import": IMPORT,
-	"type":   TYPE,
+	"def":     DEF,
+	"async":   ASYNC,
+	"return":  RETURN,
+	"if":      IF,
+	"elif":    ELIF,
+	"else":    ELSE,
+	"True":    TRUE,
+	"False":   FALSE,
+	"None":    NONE,
+	"for":     FOR,
+	"while":   WHILE,
+	"in":      IN,
+	"spawn":   SPAWN,
+	"await":   AWAIT,
+	"module":  MODULE,
+	"import":  IMPORT,
+	"type":    TYPE,
+	"service": SERVICE,
+	"on":      ON,
+	"get":     GET,
+	"post":    POST,
+	"put":     PUT,
+	"delete":  DELETE,
+	"ws":      WS,
+	"use":     USE,
 }
 
 func LookupIdent(ident string) TokenType {

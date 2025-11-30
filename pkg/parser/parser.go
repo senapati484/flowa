@@ -32,6 +32,7 @@ var precedences = map[token.TokenType]int{
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
 	token.DOT:      MEMBER,
+	token.LBRACKET: MEMBER, // Bracket access has same precedence as member access
 	token.PIPE:     PIPELINE,
 }
 
@@ -64,7 +65,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
-	p.registerPrefix(token.LBRACE, p.parseMapLiteral)
+	p.registerPrefix(token.LBRACE, p.parseMapLiteral)     // Map literals
+	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral) // Array literals
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.SPAWN, p.parseSpawnExpression)
 	p.registerPrefix(token.SPAWN, p.parseSpawnExpression)
@@ -85,6 +87,17 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.PIPE, p.parsePipelineExpression)
 	p.registerInfix(token.DOT, p.parseMemberExpression)
+	p.registerInfix(token.LBRACKET, p.parseIndexExpression) // NEW: bracket access
+
+	// Server keywords as identifiers
+	p.registerPrefix(token.GET, p.parseIdentifier)
+	p.registerPrefix(token.POST, p.parseIdentifier)
+	p.registerPrefix(token.PUT, p.parseIdentifier)
+	p.registerPrefix(token.DELETE, p.parseIdentifier)
+	p.registerPrefix(token.WS, p.parseIdentifier)
+	p.registerPrefix(token.USE, p.parseIdentifier)
+	p.registerPrefix(token.SERVICE, p.parseIdentifier)
+	p.registerPrefix(token.ON, p.parseIdentifier)
 
 	// Read two tokens, so curToken and peekToken are both set
 	p.nextToken()
@@ -134,6 +147,12 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseImportStatement()
 	case token.TYPE:
 		return p.parseTypeStatement()
+	case token.SERVICE:
+		return p.parseServiceStatement()
+	case token.GET, token.POST, token.PUT, token.DELETE, token.WS:
+		return p.parseRouteStatement()
+	case token.USE:
+		return p.parseMiddlewareStatement()
 	case token.NEWLINE:
 		return nil
 	case token.IDENT:
@@ -383,6 +402,80 @@ func (p *Parser) parseTypeStatement() *ast.TypeStatement {
 	return stmt
 }
 
+func (p *Parser) parseServiceStatement() *ast.ServiceStatement {
+	stmt := &ast.ServiceStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	if !p.expectPeek(token.ON) {
+		return nil
+	}
+
+	if !p.expectPeek(token.STRING) {
+		return nil
+	}
+
+	stmt.Address = &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
+
+	if !p.expectPeek(token.COLON) {
+		return nil
+	}
+
+	if !p.expectPeek(token.NEWLINE) {
+		return nil
+	}
+
+	stmt.Body = p.parseBlockStatement()
+
+	return stmt
+}
+
+func (p *Parser) parseRouteStatement() *ast.RouteStatement {
+	stmt := &ast.RouteStatement{Token: p.curToken, Method: p.curToken.Literal}
+
+	if !p.expectPeek(token.STRING) {
+		return nil
+	}
+
+	stmt.Path = &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
+
+	if !p.expectPeek(token.ARROW) {
+		return nil
+	}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Handler = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	if p.peekTokenIs(token.NEWLINE) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseMiddlewareStatement() *ast.MiddlewareStatement {
+	stmt := &ast.MiddlewareStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Middleware = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	if p.peekTokenIs(token.NEWLINE) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 
@@ -595,6 +688,36 @@ func (p *Parser) parseAwaitExpression() ast.Expression {
 	return expression
 }
 
+func (p *Parser) parseArrayLiteral() ast.Expression {
+	array := &ast.ArrayLiteral{Token: p.curToken}
+	array.Elements = p.parseExpressionList(token.RBRACKET)
+	return array
+}
+
+func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
+	list := []ast.Expression{}
+
+	if p.peekTokenIs(end) {
+		p.nextToken()
+		return list
+	}
+
+	p.nextToken()
+	list = append(list, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		list = append(list, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(end) {
+		return nil
+	}
+
+	return list
+}
+
 func (p *Parser) parseMapLiteral() ast.Expression {
 	mapLiteral := &ast.MapLiteral{Token: p.curToken, Pairs: []ast.MapPair{}}
 
@@ -643,6 +766,19 @@ func (p *Parser) parseMemberExpression(object ast.Expression) ast.Expression {
 	}
 
 	expression.Property = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	return expression
+}
+
+func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
+	expression := &ast.IndexExpression{Token: p.curToken, Left: left}
+
+	p.nextToken()
+	expression.Index = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RBRACKET) {
+		return nil
+	}
+
 	return expression
 }
 

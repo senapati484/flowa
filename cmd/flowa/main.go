@@ -14,11 +14,16 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 const PROMPT = ">>> "
 
 func main() {
+	// Load .env file if it exists
+	_ = godotenv.Load()
+
 	if len(os.Args) < 2 {
 		printUsage()
 		os.Exit(0)

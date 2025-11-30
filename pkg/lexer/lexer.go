@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"flowa/pkg/token"
+	"strings"
 )
 
 type Lexer struct {
@@ -271,14 +272,38 @@ func isDigit(ch byte) bool {
 }
 
 func (l *Lexer) readString() string {
-	position := l.position + 1
-	for {
-		l.readChar()
-		if l.ch == '"' || l.ch == 0 {
-			break
+	var result strings.Builder
+	l.readChar() // Skip opening quote
+
+	for l.ch != '"' && l.ch != 0 {
+		if l.ch == '\\' {
+			// Handle escape sequences
+			l.readChar()
+			switch l.ch {
+			case 'n':
+				result.WriteByte('\n')
+			case 't':
+				result.WriteByte('\t')
+			case 'r':
+				result.WriteByte('\r')
+			case '\\':
+				result.WriteByte('\\')
+			case '"':
+				result.WriteByte('"')
+			case '0':
+				result.WriteByte('\x00')
+			default:
+				// Unknown escape, just include the backslash and character
+				result.WriteByte('\\')
+				result.WriteByte(l.ch)
+			}
+		} else {
+			result.WriteByte(l.ch)
 		}
+		l.readChar()
 	}
-	return l.input[position:l.position]
+
+	return result.String()
 }
 
 func (l *Lexer) skipComment() {

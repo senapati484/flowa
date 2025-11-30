@@ -1,0 +1,38 @@
+# Comprehensive HTTP Server Example
+# Shows GET, POST, PUT, DELETE with all parameter types
+
+def get_user(req):
+    # Access query parameters: req.query
+    # Example: GET /users?id=123
+    return response(200, "GET user - query params and path supported")
+
+def create_user(req):
+    # Access POST body: req.body (raw string)
+    # Access form data: req.form (for application/x-www-form-urlencoded)
+    # Access JSON: req.json (for application/json)
+    body = req.body
+    return response(201, "Created user with body: " + body)
+
+def update_user(req):
+    # PUT requests work the same as POST
+    # Access body, form, json same way
+    return response(200, "Updated user")
+
+def delete_user(req):
+    return response(200, "Deleted user")
+
+def echo_post(req):
+    # Echo back whatever was sent
+    # Access headers with req.headers
+    # Access method with req.method
+    return response(200, "Method: " + req.method + ", Body: " + req.body)
+
+# Register routes - supports all HTTP methods
+route("GET", "/users", get_user)
+route("POST", "/users", create_user)
+route("PUT", "/users", update_user)
+route("DELETE", "/users", delete_user)
+route("POST", "/echo", echo_post)
+
+# Start server
+listen(8080)

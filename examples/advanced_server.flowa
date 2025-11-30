@@ -1,0 +1,45 @@
+# Advanced HTTP Features Demo
+# Shows path params, cookies, middleware, IP address, etc.
+
+# Middleware example - logs all requests
+def logger(req, next):
+    print("Request: " + req.method + " " + req.path)
+    print("IP: " + req.ip)
+    result = next()
+    print("Response sent")
+    return result
+
+# Get user by ID - demonstrates path parameters with bracket access
+def get_user(req):
+    # Access path parameter from /users/:id using bracket notation
+    user_id = req.params["id"]
+    return response(200, "User ID: " + user_id)
+
+# Create user - demonstrates POST with body
+def create_user(req):
+    # Call req.text() to get body as string
+    body = req.text()
+    return response(201, "Created user with data: " + body)
+
+# Login - demonstrates IP address
+def login(req):
+    # Access IP
+    ip = req.ip
+    return response(200, "Logged in from IP: " + ip)
+
+# Echo - demonstrates method and path access
+def echo(req):
+    return response(200, "Echo: " + req.method + " " + req.path)
+
+# Register global middleware (applied to all routes)
+use_middleware(logger)
+
+# Register routes with path parameters
+route("GET", "/users/:id", get_user)
+route("POST", "/users", create_user)
+route("POST", "/login", login)
+route("GET", "/echo", echo)
+
+# Start server
+listen(8080)
+

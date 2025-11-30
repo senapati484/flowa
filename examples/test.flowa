@@ -9,6 +9,7 @@ print("Assignments:")
 print(x)
 print(name)
 print(is_active)
+print("\n")
 
 # Arithmetic
 sum = x + y
@@ -21,6 +22,7 @@ print(sum)
 print(diff)
 print(prod)
 print(quot)
+print(nothing)
 
 # Comparison
 print("Comparison:")

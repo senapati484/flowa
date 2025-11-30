@@ -1,0 +1,34 @@
+# Test Auth and JWT Modules
+
+print("=== Testing Auth Module ===")
+password = "mysecretpassword"
+print("Password:", password)
+
+# 1. Hash Password
+hash = auth.hash_password(password)
+print("Hash:", hash)
+
+# 2. Verify Password
+valid = auth.verify_password(hash, password)
+print("Verify correct:", valid)
+
+invalid = auth.verify_password(hash, "wrongpassword")
+print("Verify incorrect:", invalid)
+
+print("\n=== Testing JWT Module ===")
+secret = "supersecretkey"
+payload = {"user_id": 123, "role": "admin"}
+
+# 1. Sign Token
+token = jwt.sign(payload, secret, "1h")
+print("Token:", token)
+
+# 2. Verify Token
+claims = jwt.verify(token, secret)
+print("Claims:", claims)
+print("User ID:", claims["user_id"])
+print("Role:", claims["role"])
+
+# 3. Verify Invalid Token
+invalid_claims = jwt.verify(token, "wrongsecret")
+print("Invalid Claims (should be null):", invalid_claims)

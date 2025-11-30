@@ -218,6 +218,59 @@ func (ts *TypeStatement) String() string {
 	return out.String()
 }
 
+type ServiceStatement struct {
+	Token   token.Token // 'service'
+	Name    *Identifier
+	Address *StringLiteral
+	Body    *BlockStatement
+}
+
+func (ss *ServiceStatement) statementNode()       {}
+func (ss *ServiceStatement) TokenLiteral() string { return ss.Token.Literal }
+func (ss *ServiceStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("service ")
+	out.WriteString(ss.Name.String())
+	out.WriteString(" on ")
+	out.WriteString(ss.Address.String())
+	out.WriteString(":")
+	out.WriteString(ss.Body.String())
+	return out.String()
+}
+
+type RouteStatement struct {
+	Token   token.Token // 'get', 'post', etc.
+	Method  string      // "GET", "POST", etc.
+	Path    *StringLiteral
+	Handler *Identifier
+}
+
+func (rs *RouteStatement) statementNode()       {}
+func (rs *RouteStatement) TokenLiteral() string { return rs.Token.Literal }
+func (rs *RouteStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString(rs.Method)
+	out.WriteString(" ")
+	out.WriteString(rs.Path.String())
+	out.WriteString(" -> ")
+	out.WriteString(rs.Handler.String())
+	return out.String()
+}
+
+type MiddlewareStatement struct {
+	Token      token.Token // 'use'
+	Middleware *Identifier
+}
+
+func (ms *MiddlewareStatement) statementNode()       {}
+func (ms *MiddlewareStatement) TokenLiteral() string { return ms.Token.Literal }
+func (ms *MiddlewareStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("use ")
+	out.WriteString(ms.Middleware.String())
+	return out.String()
+}
+
 // Expressions
 
 type Identifier struct {
@@ -389,6 +442,25 @@ func (ae *AwaitExpression) String() string {
 	return out.String()
 }
 
+type ArrayLiteral struct {
+	Token    token.Token // '['
+	Elements []Expression
+}
+
+func (al *ArrayLiteral) expressionNode()      {}
+func (al *ArrayLiteral) TokenLiteral() string { return al.Token.Literal }
+func (al *ArrayLiteral) String() string {
+	var out bytes.Buffer
+	elements := []string{}
+	for _, el := range al.Elements {
+		elements = append(elements, el.String())
+	}
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteString("]")
+	return out.String()
+}
+
 type MapLiteral struct {
 	Token token.Token // '{'
 	Pairs []MapPair
@@ -426,5 +498,22 @@ func (me *MemberExpression) String() string {
 	out.WriteString(me.Object.String())
 	out.WriteString(".")
 	out.WriteString(me.Property.String())
+	return out.String()
+}
+
+type IndexExpression struct {
+	Token token.Token // The '[' token
+	Left  Expression  // The thing being indexed (map, array)
+	Index Expression  // The index/key expression
+}
+
+func (ie *IndexExpression) expressionNode()      {}
+func (ie *IndexExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IndexExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString(ie.Left.String())
+	out.WriteString("[")
+	out.WriteString(ie.Index.String())
+	out.WriteString("]")
 	return out.String()
 }

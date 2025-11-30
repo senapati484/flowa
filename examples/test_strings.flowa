@@ -1,0 +1,18 @@
+# Test Escape Sequences
+
+print("Testing escape sequences:")
+print("Line 1\nLine 2\nLine 3")
+print("Tab\tseparated\tvalues")
+print("Quote: \"Hello\"")
+print("Backslash: \\")
+print("Combined: Hello\n\tWorld!\n")
+
+# Test string basics
+name = "Flowa"
+version = "0.1.0"
+message = "Hello, " + name + " v" + version
+print(message)
+
+# Test len function
+text = "Hello World"
+print("Length of 'Hello World':", len(text))
