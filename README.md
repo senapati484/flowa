@@ -4,374 +4,322 @@
 
 <h1 align="center">Flowa</h1>
 
-<p align="center"><strong>Pipeline‑first language for modern data and backend flows.</strong></p>
+<p align="center"><strong>Server-first language for modern web applications</strong></p>
 
 <p align="center">
-  <em>Python‑style readability. Go‑powered speed. Built for the pipeline era.</em>
+  <em>Python-style syntax. Go-powered performance. Built-in auth, real-time, and more.</em>
 </p>
 
 ---
 
-**Flowa** is a small but expressive programming language focused on one idea:
-make **data flow** the center of your code. The pipeline operator `|>` turns
-deeply nested calls into readable, linear flows that are perfect for scripting,
-services, and experimentation.
+## 🚀 What is Flowa?
 
-## 🚀 Why Flowa?
+**Flowa** is a programming language designed to make server development simple and powerful. Built on Go, it combines:
 
-Most languages force you to choose between **simplicity** (Python) and **performance** (Go/Rust). Flowa eliminates this compromise.
+- **🐍 Python-style syntax** – Clean, readable, indentation-based
+- **⚡ Go performance** – Fast runtime, single binary
+- **🔋 Batteries included** – Auth, JWT, WebSocket, Email built-in
+- **📊 Pipeline-first** – Data flows naturally with `|>` operator
 
-### 🌟 Unique Selling Points:
+```python
+# Simple, powerful syntax
+def process(data):
+    return data |> validate() |> transform() |> save()
 
-1.  **Pipeline‑first design** – The `|>` operator isn't just sugar; it's the
-    core primitive. Data flows linearly, eliminating nested function hell.
+# Built-in server with auth
+service API on ":8080":
+    post "/register" -> register_user
+    post "/login" -> login_user
+    get "/ws" -> websocket_handler
+```
 
-    ```python
-    # Traditional
-    save(optimize(resize(image)))
-
-    # Flowa
-    image |> resize() |> optimize() |> save()
-    ```
-
-2.  **Zero‑boilerplate async (MVP semantics today)** – `spawn` and `await`
-    give you a task abstraction for simple concurrency experiments. The
-    current interpreter runs tasks synchronously but preserves the language
-    surface so the runtime can evolve.
-
-3.  **The "Goldilocks" syntax**:
-
-    - Indentation-based (like Python) for readability.
-    - Static typing potential (like Go) for reliability.
-    - Minimalist keywords for zero learning curve.
-
-4.  **Single‑binary toolchain** – No virtual environments, no complex build
-    tools. One binary (`flowa`) does it all: run scripts, REPL, inspect
-    pipelines, print ASTs.
-
-## ✨ Highlights
-
-- **Pipeline operator (`|>`)** – Compose transformations in a straight line.
-- **Clean, indentation‑based syntax** – Instantly familiar to Python users.
-- **Go‑powered implementation** – A tiny, fast single binary.
-- **REPL & tooling** – `repl`, `ast`, `inspect`, and `pipelines` help you
-  explore programs as data flows.
-- **HTTP helpers (MVP)** – Tiny `route`, `response`, `listen` helpers make it
-  easy to spin up demo servers in pure Flowa.
+---
 
 ## 📦 Installation
 
-### Quick Start
+### Prerequisites
 
-Choose your platform for detailed installation instructions:
-
-- **macOS**: [macOS Installation Guide](INSTALL_MAC_LINUX.md#macos-installation-methods)
-- **Linux**: [Linux Installation Guide](INSTALL_MAC_LINUX.md#linux-installation-methods)
-- **Windows**: [Windows Installation Guide](INSTALL_WINDOWS.md)
-
-### Quick Install (macOS/Linux)
+**Go 1.20+** must be installed on your system.
 
 ```bash
-# Clone and install
-curl -L https://github.com/senapati484/flowa/raw/main/install.sh | sh
-
-# Verify installation
-flowa --version
+# Check Go installation
+go version
 ```
 
-### Homebrew (macOS)
+Don't have Go? [Install Go](https://go.dev/doc/install) first.
+
+### Install Flowa (macOS/Linux)
+
+#### Homebrew (Recommended)
 
 ```bash
 brew tap senapati484/flowa
 brew install flowa
 ```
 
+#### From Source
+
+```bash
+git clone https://github.com/senapati484/flowa
+cd flowa
+go build -o flowa ./cmd/flowa
+sudo mv flowa /usr/local/bin/
+```
+
 ### Verify Installation
 
 ```bash
 flowa --version
-flowa run examples/hello.flowa
+# Flowa 0.1.0
 ```
-
-For more installation options and troubleshooting, see the full [Installation Guide](INSTALL_MAC_LINUX.md).
 
 ---
 
-## 🧪 First Steps
+## 🎯 Why Flowa?
 
-### Run a Flowa script
+### Built on Go, Better than Go
+
+Flowa inherits Go's performance and reliability, but adds:
+
+1. **🚄 Faster Development**
+   - No boilerplate (no `package main`, `import`, `func main()`)
+   - Python-style syntax you already know
+   - No manual error handling everywhere
+
+2. **🔋 Standard Library on Steroids**
+   - Authentication (bcrypt) built-in
+   - JWT signing & verification
+   - WebSocket support
+   - SMTP email with templates
+   - No need for external frameworks
+
+3. **📊 Pipeline Operator**
+   ```python
+   # Traditional
+   save(optimize(resize(image)))
+   
+   # Flowa
+   image |> resize() |> optimize() |> save()
+   ```
+
+4. **⚡ Single Binary**
+   - No virtual environments
+   - No dependency hell
+   - Just one executable
+
+### vs Other Languages
+
+| Feature | Flowa | Python | Go | Node.js |
+|---------|-------|--------|-------|---------|
+| Easy Syntax | ✅ | ✅ | ❌ | ✅ |
+| Fast Performance | ✅ | ❌ | ✅ | ⚠️ |
+| Built-in Auth | ✅ | ❌ | ❌ | ❌ |
+| Built-in WebSocket | ✅ | ❌ | ⚠️ | ⚠️ |
+| Single Binary | ✅ | ❌ | ✅ | ❌ |
+| Pipeline Operator | ✅ | ❌ | ❌ | ❌ |
+
+---
+
+## 🧪 Quick Start
+
+### 1. Hello World
+
+```python
+# hello.flowa
+def greet(name):
+    return "Hello, " + name
+
+result = greet("World")
+print(result)
+```
 
 ```bash
-# Simple: just provide the filename
 flowa hello.flowa
-
-# Or use the explicit 'run' command
-flowa run hello.flowa
+# Hello, World
 ```
 
-### Interactive REPL
-
-```bash
-flowa repl
-```
-
-```
-Flowa REPL v0.1 (MVP)
->>> def double(x):
-...     return x * 2
-function
->>> 5 |> double()
-10
->>> 10 |> double() |> double()
-40
-```
-
-### Language insights & tooling
-
-Flowa ships with exploratory commands so you can treat your scripts as living
-pipelines:
-
-```bash
-# Print version + build metadata
-flowa --version
-
-# Summarize functions and pipeline chains inside a script
-flowa inspect examples/pipeline.flowa
-
-# Show only pipeline chains (great for docs / reviews)
-flowa pipelines examples/pipeline.flowa
-
-# Dump the parsed AST to understand how the compiler sees your code
-flowa ast examples/hello.flowa
-
-# Need a quick refresher on commands?
-flowa help
-```
-
-Example inspector output:
-
-```
-Functions (2)
-  · def square(x)
-  · def increment(x)
-Pipelines (1)
-  · Pipeline 1: 5 |> increment() |> square()
-```
-
-## Language Syntax
-
-### Functions
+### 2. Pipeline Example
 
 ```python
-def add(x, y):
-    return x + y
-
-result = add(5, 10)  # 15
-```
-
-### Pipeline Operator
-
-The `|>` operator passes the left-hand value as the **first argument** to the right-hand function:
-
-```python
+# pipeline.flowa
 def increment(x):
     return x + 1
 
 def square(x):
     return x * x
 
-# Traditional style
-result = square(increment(5))  # 36
-
-# Pipeline style (cleaner!)
-result = 5 |> increment() |> square()  # 36
+result = 5 |> increment() |> square()
+print(result)  # 36
 ```
 
-### Pipelines with Multiple Arguments
+### 3. Create a Server (The Flowa Way)
 
 ```python
-def add(x, y):
-    return x + y
+# server.flowa
+def hello(req):
+    name = req.query["name"]
+    return response.json({"message": "Hello, " + name}, 200)
 
-result = 5 |> add(10)  # 5 + 10 = 15
+def get_user(req):
+    id = req.params["id"]
+    return response.json({"user_id": id}, 200)
+
+service MyAPI on ":8080":
+    get "/" -> hello
+    get "/users/:id" -> get_user
 ```
 
-### Recursion
+```bash
+flowa server.flowa
+# Starting service MyAPI on :8080
+```
 
-> **Note**: Conditional statements are being implemented. For now, recursion works but requires manual termination conditions.
+**Test it:**
+```bash
+curl "http://localhost:8080?name=Flowa"
+# {"message":"Hello, Flowa"}
+
+curl "http://localhost:8080/users/123"
+# {"user_id":"123"}
+```
+
+---
+
+## 🔥 Key Features
+
+### 🌐 HTTP Server Made Easy
+
+No framework needed. Built-in routing, middleware, and response helpers.
 
 ```python
-def double(x):
-    return x * 2
-
-result = 5 |> double()  # 10
+service API on ":8080":
+    get "/health" -> health_check
+    post "/users" -> create_user
+    get "/users/:id" -> get_user
 ```
 
-## Example Programs
+### 🔐 Authentication Built-in
 
-### 1. Hello World ([examples/hello.flowa](examples/hello.flowa))
+Bcrypt password hashing out of the box.
 
 ```python
-def add(x, y):
-    return x + y
-
-def multiply(x, factor):
-    return x * factor
-
-def process(n):
-    return n |> add(10) |> multiply(2)
-
-result = process(5)  # 30
+hash = auth.hash_password("secret123")
+valid = auth.verify_password(hash, "secret123")  # True
 ```
 
-```bash
-flowa examples/hello.flowa
-```
+### 🎫 JWT Tokens
 
-### 2. Data Pipeline ([examples/pipeline.flowa](examples/pipeline.flowa))
+Sign and verify JSON Web Tokens for stateless auth.
 
 ```python
-def square(x):
-    return x * x
-
-def increment(x):
-    return x + 1
-
-result = 5 |> increment() |> square()  # 36
+token = jwt.sign({"user_id": 123}, "secret", "24h")
+claims = jwt.verify(token, "secret")
 ```
 
-```bash
-flowa examples/pipeline.flowa
-```
+### 🔌 WebSocket Support
 
-### 3. Simple Recursion ([examples/fibonacci.flowa](examples/fibonacci.flowa))
+Real-time bidirectional communication.
 
 ```python
-def double(x):
-    return x * 2
-
-result = 5 |> double()  # 10
+def chat(req):
+    conn = websocket.upgrade(req)
+    while True:
+        msg = websocket.read(conn)
+        websocket.send(conn, "Echo: " + msg)
 ```
 
-```bash
-flowa examples/fibonacci.flowa
+### 📧 Email with Templates
+
+SMTP email sending with template support.
+
+```python
+mail.send_template("Hello {{name}}", {
+    "to": "user@example.com",
+    "name": "Alice"
+})
 ```
 
-### HTTP Helper
+---
 
-Coming soon!
+## 📚 Learn More
 
-## Development
+- **[📖 Full Documentation](DOCUMENTATION.md)** – Complete language guide with examples
+- **[🔌 API Reference](API.md)** – All built-in modules and functions
+- **[💻 Examples](examples/)** – Sample projects and code
 
-### Building from Source
+---
 
-```bash
-# Using Make
-make build
+## 📊 Implementation Status
 
-# Or using Go directly
-go build -o flowa ./cmd/flowa
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-make test
-
-# Or using Go
-go test ./...
-
-# Run specific package tests
-go test ./pkg/lexer
-go test ./pkg/parser
-```
-
-### Code Formatting
-
-```bash
-go fmt ./...
-```
-
-### Uninstalling
-
-```bash
-make uninstall
-```
-
-### Project Structure
-
-```
-flowa/
-├── cmd/flowa/          # CLI compiler tool
-│   └── main.go
-├── pkg/
-│   ├── token/          # Token definitions
-│   ├── lexer/          # Tokenizer (indentation-aware)
-│   ├── ast/            # Abstract Syntax Tree nodes
-│   ├── parser/         # Recursive descent parser
-│   └── eval/           # AST interpreter
-├── examples/           # Example .flowa scripts
-│   ├── hello.flowa
-│   ├── fibonacci.flowa
-│   └── pipeline.flowa
-├── legacy_prototype/   # Original Python prototype
-├── go.mod
-└── README.md
-```
-
-## Implementation Status
-
-### ✅ Phase 0: MVP (Complete)
-
-- [x] Lexer with indentation handling
-- [x] Pratt parser with proper precedence
-- [x] AST-based interpreter
-- [x] Pipeline operator (`|>`)
+### ✅ Complete Features
+- [x] Lexer with indentation
+- [x] Parser with pipeline operator
+- [x] AST interpreter
 - [x] Functions and closures
-- [x] REPL and CLI tool
-- [x] Basic arithmetic and recursion
+- [x] REPL and CLI
+- [x] **String escape sequences** (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`)
+- [x] **JSON encoding/decoding**
+- [x] **HTTP server with routing**
+- [x] **Response helpers**
+- [x] **Config (environment variables, `config.env()`)**
+- [x] **Middleware (logger, CORS)**
+- [x] **Mail (SMTP with templates)**
+- [x] **Auth (bcrypt password hashing)**
+- [x] **JWT (token sign/verify)**
+- [x] **WebSockets (real-time communication)**
 
-### 🚧 Phase 1: Compiler & Runtime (Planned)
+### 🚧 In Progress
+- [ ] Database module (SQL, migrations)
+- [ ] File system module
+- [ ] HTTP client module
+- [ ] Type system
 
-- [ ] SSA IR generation
-- [ ] LLVM backend for native compilation
-- [ ] M:N scheduler for concurrency
-- [ ] `spawn` and `await` keywords
-- [ ] Async I/O (epoll/io_uring on Linux)
-- [ ] Standard library (HTTP, DB, JSON)
-- [ ] Type checker and inference
+### 🔮 Future
+- [ ] Native compilation (LLVM)
+- [ ] M:N scheduler for async
+- [ ] Static typing
+- [ ] Package manager
 
-### 🔮 Phase 2: Optimization (Future)
+---
 
-- [ ] Escape analysis
-- [ ] GC tuning
-- [ ] Per-request memory arenas
-- [ ] Cross-compilation support
-- [ ] Zero-cost abstractions
-
-## Design Philosophy
+## 🎯 Design Philosophy
 
 Flowa is designed to be:
 
-1. **Familiar**: Pythonic syntax for easy adoption
-2. **Fast**: Go-based toolchain with future native compilation
-3. **Expressive**: Pipeline operators make data flows clear
-4. **Simple**: Minimal core language with powerful composition
-5. **Server-ready**: Built for backend services and microservices
-
-## File Extension
-
-Flowa files use the `.flowa` extension.
-
-## Contributing
-
-This is currently a prototype/learning project. Contributions and feedback are welcome!
-
-## License
-
-MIT
+1. **Familiar** – Python-style syntax for easy adoption
+2. **Fast** – Go-based runtime, single binary
+3. **Complete** – Built-in auth, real-time, email (no external frameworks)
+4. **Expressive** – Pipeline operators make code readable
+5. **Server-ready** – Perfect for APIs and microservices
 
 ---
 
-**Note**: This is an MVP implementation. The language is under active development. Many features (concurrency, standard library, native compilation) are planned for future phases.
+## 👨‍💻 Creator
+
+<p align="center">
+  <img src="https://avatars.githubusercontent.com/u/112938237?v=4" alt="Creator" width="150" style="border-radius: 50%;" />
+</p>
+
+<p align="center">
+  <strong>Sayan Senapati</strong><br>
+  Language Designer & Developer
+</p>
+
+---
+
+## 📧 Contact
+
+**Email**: flowalang@gmail.com  
+**GitHub**: [github.com/senapati484/flowa](https://github.com/senapati484/flowa)
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+<p align="center">
+  <strong>Built with ❤️ for developers who love clean code and powerful features.</strong>
+</p>
