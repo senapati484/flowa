@@ -2,10 +2,10 @@
 # To install: brew install --formula flowa.rb
 
 class Flowa < Formula
-  desc "Pythonic, pipeline-first programming language"
+  desc "A Pythonic, pipeline-first programming language designed for data processing and automation, emphasizing readability and ease of use."
   homepage "https://github.com/senapati484/flowa"
   url "https://github.com/senapati484/flowa/archive/refs/heads/main.tar.gz"
-  version "0.1.0"
+  version "0.1.1"
   license "MIT"
 
   depends_on "go" => :build
