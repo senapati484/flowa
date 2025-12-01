@@ -1,0 +1,34 @@
+# Flowa Language Features Test
+
+# 1. Imports
+from "examples/module_a.flowa" import greet, PI
+print("--- Imports ---")
+print(greet("Tester"))
+print("PI:", PI)
+
+# 2. Strings & Escape Sequences
+print("\n--- Strings ---")
+print("Line 1\nLine 2")
+print("Tab\tSeparated")
+print("Quote: \"Hello\"")
+
+# 3. Arrays & Maps
+print("\n--- Data Structures ---")
+arr = [1, 2, 3]
+print("Array:", arr)
+print("First:", first(arr))
+print("Len:", len(arr))
+
+m = {"a": 1, "b": 2}
+print("Map:", m)
+print("m['a']:", m["a"])
+
+# 4. Control Flow
+print("\n--- Control Flow ---")
+if len(arr) > 2:
+    print("Array has more than 2 elements")
+
+for x in arr:
+    print("Item:", x)
+
+print("\n✅ Language tests completed")

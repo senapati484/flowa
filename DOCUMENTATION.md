@@ -159,6 +159,36 @@ data = {"users": [{"name": "Alice"}, {"name": "Bob"}]}
 first_user = data["users"][0]["name"]  # "Alice"
 ```
 
+### Imports
+
+Split your code into multiple files.
+
+```python
+# math_utils.flowa
+def add(a, b):
+    return a + b
+
+PI = 3.14159
+```
+
+```python
+# main.flowa
+from "math_utils.flowa" import add, PI
+
+result = add(10, 20)
+print(PI)
+```
+
+**Wildcard Import:**
+```python
+from "math_utils.flowa" import *
+```
+
+**JS-Style Import:**
+```python
+import { add, PI } from "math_utils.flowa"
+```
+
 ---
 
 ## 🌐 HTTP Server
@@ -175,15 +205,18 @@ def about(req):
     html = "<h1>About Us</h1><p>Built with Flowa</p>"
     return response.html(html, 200)
 
-service MyWebsite on ":8080":
-    get "/" -> homepage
-    get "/about" -> about
+# Register routes
+route("GET", "/", homepage)
+route("GET", "/about", about)
+
+# Start server
+listen(8080)
 ```
 
 **Run it:**
 ```bash
 flowa server.flowa
-# Starting service MyWebsite on :8080
+# Starting HTTP server on :8080
 ```
 
 ### Request Object
@@ -241,6 +274,13 @@ service API on ":8080":
     get "/posts/:post_id/comments/:comment_id" -> get_comment
 ```
 
+**New Syntax:**
+```python
+route("GET", "/users/:id", get_user)
+route("GET", "/posts/:post_id/comments/:comment_id", get_comment)
+listen(8080)
+```
+
 **Test:**
 ```bash
 curl http://localhost:8080/users/123
@@ -287,8 +327,9 @@ def create_user(req):
         "username": username
     }, 201)
 
-service API on ":8080":
-    post "/users" -> create_user
+# Register route
+route("POST", "/users", create_user)
+listen(8080)
 ```
 
 **Test:**
@@ -659,7 +700,21 @@ mail.send({
 - `to` (required): Recipient email
 - `from` (optional): Sender email (defaults to SMTP_USER)
 - `subject` (required): Email subject
-- `body` (required): Email body text
+- `subject` (required): Email subject
+- `body` (required): Email body text (plain text)
+- `html` (optional): HTML body content (overrides plain text)
+
+### HTML Email
+
+```python
+html_content = "<h1>Welcome</h1><p>Thanks for joining!</p>"
+
+mail.send({
+    "to": "user@example.com",
+    "subject": "Welcome",
+    "html": html_content
+})
+```
 
 ### Template Emails
 
@@ -776,6 +831,81 @@ age = data["age"]    # 30
 json_array = '[1, 2, 3, 4, 5]'
 numbers = json.decode(json_array)
 first = numbers[0]  # 1
+```
+
+---
+
+## 📂 File System (`fs`)
+
+Built-in module for file operations.
+
+```python
+# Read a file
+content = fs.read("data.txt")
+
+# Write to a file (overwrites)
+fs.write("output.txt", "Hello World")
+
+# Append to a file
+fs.append("log.txt", "New log entry\n")
+
+# Check if file exists
+if fs.exists("config.json"):
+    print("Config found")
+
+# Remove a file
+fs.remove("temp.txt")
+```
+
+---
+
+## 🌐 HTTP Client
+
+Make HTTP requests to external APIs.
+
+### GET Request
+
+```python
+# Simple GET
+resp = http.get("https://api.example.com/users")
+
+print("Status:", resp.status)
+print("Body:", resp.body)
+
+# Parse JSON response
+data = json.decode(resp.body)
+print("First user:", data[0]["name"])
+```
+
+### POST Request
+
+```python
+# Prepare payload
+payload = {"title": "New Post", "body": "Content", "userId": 1}
+headers = {"Content-Type": "application/json"}
+
+# Make POST request
+resp = http.post(
+    "https://api.example.com/posts",
+    json.encode(payload),
+    headers
+)
+
+if resp.status == 201:
+    print("Created!")
+    result = json.decode(resp.body)
+    print("ID:", result["id"])
+```
+
+### Response Object
+
+```python
+resp = http.get("https://api.example.com/data")
+
+# Available fields
+resp.status    # HTTP status code (200, 404, etc.)
+resp.body      # Response body as string
+resp.headers   # Map of headers
 ```
 
 ---

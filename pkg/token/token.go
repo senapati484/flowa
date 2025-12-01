@@ -62,7 +62,9 @@ const (
 	AWAIT  = "AWAIT"
 	MODULE = "MODULE"
 	IMPORT = "IMPORT"
+	FROM   = "FROM"
 	TYPE   = "TYPE"
+	DEFER  = "DEFER"
 
 	// Server
 	SERVICE = "SERVICE"
@@ -103,7 +105,9 @@ var keywords = map[string]TokenType{
 	"await":   AWAIT,
 	"module":  MODULE,
 	"import":  IMPORT,
+	"from":    FROM,
 	"type":    TYPE,
+	"defer":   DEFER,
 	"service": SERVICE,
 	"on":      ON,
 	"get":     GET,

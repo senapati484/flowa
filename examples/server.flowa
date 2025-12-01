@@ -1,9 +1,0 @@
-def hello(req):
-    return response(200, "Hello World")
-
-def hey(req):
-    return response(200, "Hey")
-
-route("GET", "/hello", hello)
-route("GET", "/hey", hey)
-listen(8080)

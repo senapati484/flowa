@@ -1,0 +1,35 @@
+# test_fs.flowa
+
+path = "test_file.txt"
+
+# 1. Write
+print("Writing file...")
+fs.write(path, "Hello FS!")
+
+# 2. Exists
+if fs.exists(path):
+    print("✅ File created")
+else:
+    print("❌ File creation failed")
+
+# 3. Read
+content = fs.read(path)
+print("Content:", content)
+if content == "Hello FS!":
+    print("✅ Read works")
+else:
+    print("❌ Read failed")
+
+# 4. Append
+print("Appending...")
+fs.append(path, "\nAppended line")
+content = fs.read(path)
+print("New Content:", content)
+
+# 5. Remove
+print("Removing...")
+fs.remove(path)
+if fs.exists(path):
+    print("❌ Remove failed")
+else:
+    print("✅ Remove works")

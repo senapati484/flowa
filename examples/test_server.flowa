@@ -1,0 +1,54 @@
+# Flowa Server Features Test
+# Includes: HTTP, WebSockets, Mail, Auth, JSON
+
+# --- Handlers ---
+
+def home(req):
+    return response.html("<h1>Flowa Server</h1><p>Endpoints:</p><ul><li>GET /ws (WebSocket Chat)</li><li>POST /mail (Send Test Email)</li><li>GET /json (JSON Response)</li></ul>", 200)
+
+def json_test(req):
+    data = {"message": "Hello from JSON", "timestamp": 1234567890}
+    return response.json(data, 200)
+
+def send_mail_test(req):
+    # Get SMTP config
+    smtp_host = config.env("SMTP_HOST", "")
+    if smtp_host == "":
+        return response.json({"error": "SMTP not configured"}, 500)
+    
+    # Send email
+    to = "sayansenapati2544@gmail.com"
+    subject = "Flowa Server Test"
+    html = "<h1>Flowa Server Test</h1><p>This email was sent from the consolidated test server.</p>"
+    
+    mail.send({"to": to, "subject": subject, "html": html})
+    return response.json({"message": "Email sent to " + to}, 200)
+
+def ws_chat(req):
+    conn = websocket.upgrade(req)
+    if conn == None:
+        return response(500, "Upgrade failed")
+    
+    websocket.send(conn, "Connected to Flowa Chat")
+    
+    while True:
+        msg = websocket.read(conn)
+        if msg == None:
+            break
+        print("WS Received:", msg)
+        websocket.send(conn, "Echo: " + msg)
+    
+    websocket.close(conn)
+    return None
+
+# --- Routes ---
+
+route("GET", "/", home)
+route("GET", "/json", json_test)
+route("POST", "/mail", send_mail_test)
+route("GET", "/ws", ws_chat)
+
+# --- Start ---
+
+print("Starting consolidated server on :8080...")
+listen(8080)

@@ -202,6 +202,34 @@ func (is *ImportStatement) String() string {
 	return out.String()
 }
 
+type FromImportStatement struct {
+	Token     token.Token // 'from'
+	Path      *StringLiteral
+	Symbols   []*Identifier // The symbols to import
+	ImportAll bool          // True if importing *
+}
+
+func (fis *FromImportStatement) statementNode()       {}
+func (fis *FromImportStatement) TokenLiteral() string { return fis.Token.Literal }
+func (fis *FromImportStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("from ")
+	out.WriteString(fis.Path.String())
+	out.WriteString(" import ")
+
+	if fis.ImportAll {
+		out.WriteString("*")
+	} else {
+		symbols := []string{}
+		for _, s := range fis.Symbols {
+			symbols = append(symbols, s.String())
+		}
+		out.WriteString(strings.Join(symbols, ", "))
+	}
+
+	return out.String()
+}
+
 type TypeStatement struct {
 	Token  token.Token // 'type'
 	Name   *Identifier
@@ -268,6 +296,22 @@ func (ms *MiddlewareStatement) String() string {
 	var out bytes.Buffer
 	out.WriteString("use ")
 	out.WriteString(ms.Middleware.String())
+	return out.String()
+}
+
+type DeferStatement struct {
+	Token token.Token // 'defer'
+	Call  Expression  // The call expression to defer
+}
+
+func (ds *DeferStatement) statementNode()       {}
+func (ds *DeferStatement) TokenLiteral() string { return ds.Token.Literal }
+func (ds *DeferStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("defer ")
+	if ds.Call != nil {
+		out.WriteString(ds.Call.String())
+	}
 	return out.String()
 }
 

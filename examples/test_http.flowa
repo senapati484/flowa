@@ -1,0 +1,34 @@
+# test_http.flowa
+
+print("--- Testing HTTP Client ---")
+
+# 1. GET Request
+print("\n1. GET Request")
+# We'll use a public API for testing
+url = "https://jsonplaceholder.typicode.com/todos/1"
+resp = http.get(url)
+
+print("Status:", resp.status)
+if resp.status == 200:
+    print("✅ GET success")
+    # Parse JSON body
+    data = json.decode(resp.body)
+    print("Title:", data["title"])
+else:
+    print("❌ GET failed")
+
+# 2. POST Request
+print("\n2. POST Request")
+post_url = "https://jsonplaceholder.typicode.com/posts"
+payload = {"title": "foo", "body": "bar", "userId": 1}
+headers = {"Content-Type": "application/json; charset=UTF-8"}
+
+resp_post = http.post(post_url, json.encode(payload), headers)
+
+print("Status:", resp_post.status)
+if resp_post.status == 201:
+    print("✅ POST success")
+    data_post = json.decode(resp_post.body)
+    print("ID:", data_post["id"])
+else:
+    print("❌ POST failed")

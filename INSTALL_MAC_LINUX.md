@@ -65,7 +65,7 @@ sudo make install
 
 ```bash
 flowa --version
-flowa run examples/hello.flowa
+flowa examples/hello.flowa
 ```
 
 ## Uninstalling

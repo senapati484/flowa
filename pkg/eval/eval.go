@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"flowa/pkg/ast"
+	"flowa/pkg/lexer"
+	"flowa/pkg/parser"
 
 	"github.com/gorilla/websocket"
 	"gopkg.in/gomail.v2"
@@ -1392,6 +1394,231 @@ func NewEnvironment() *Environment {
 		},
 	}
 
+	// Add response() builtin - simple response helper
+	// ... (removed in previous step, but ensuring we are in NewEnvironment)
+
+	// FS Module
+	fsModule := make(map[string]Object)
+
+	// fs.read(path)
+	fsModule["read"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 1 {
+				return newError("fs.read expects 1 argument (path)")
+			}
+			path, ok := args[0].(*String)
+			if !ok {
+				return newError("fs.read argument must be STRING")
+			}
+			content, err := os.ReadFile(path.Value)
+			if err != nil {
+				return newError("fs.read failed: %s", err)
+			}
+			return &String{Value: string(content)}
+		},
+	}
+
+	// fs.write(path, content)
+	fsModule["write"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 2 {
+				return newError("fs.write expects 2 arguments (path, content)")
+			}
+			path, ok := args[0].(*String)
+			if !ok {
+				return newError("fs.write path must be STRING")
+			}
+			content, ok := args[1].(*String)
+			if !ok {
+				return newError("fs.write content must be STRING")
+			}
+			err := os.WriteFile(path.Value, []byte(content.Value), 0644)
+			if err != nil {
+				return newError("fs.write failed: %s", err)
+			}
+			return TRUE
+		},
+	}
+
+	// fs.append(path, content)
+	fsModule["append"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 2 {
+				return newError("fs.append expects 2 arguments (path, content)")
+			}
+			path, ok := args[0].(*String)
+			if !ok {
+				return newError("fs.append path must be STRING")
+			}
+			content, ok := args[1].(*String)
+			if !ok {
+				return newError("fs.append content must be STRING")
+			}
+
+			f, err := os.OpenFile(path.Value, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return newError("fs.append failed: %s", err)
+			}
+			defer f.Close()
+
+			if _, err := f.WriteString(content.Value); err != nil {
+				return newError("fs.append failed: %s", err)
+			}
+			return TRUE
+		},
+	}
+
+	// fs.exists(path)
+	fsModule["exists"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 1 {
+				return newError("fs.exists expects 1 argument (path)")
+			}
+			path, ok := args[0].(*String)
+			if !ok {
+				return newError("fs.exists argument must be STRING")
+			}
+			if _, err := os.Stat(path.Value); os.IsNotExist(err) {
+				return FALSE
+			}
+			return TRUE
+		},
+	}
+
+	// fs.remove(path)
+	fsModule["remove"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 1 {
+				return newError("fs.remove expects 1 argument (path)")
+			}
+			path, ok := args[0].(*String)
+			if !ok {
+				return newError("fs.remove argument must be STRING")
+			}
+			err := os.Remove(path.Value)
+			if err != nil {
+				return newError("fs.remove failed: %s", err)
+			}
+			return TRUE
+		},
+	}
+
+	env.store["fs"] = &StructInstance{Name: "FS", Fields: fsModule}
+
+	// HTTP Module
+	httpModule := make(map[string]Object)
+
+	// http.get(url)
+	httpModule["get"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 1 {
+				return newError("http.get expects 1 argument (url)")
+			}
+			url, ok := args[0].(*String)
+			if !ok {
+				return newError("http.get url must be STRING")
+			}
+
+			resp, err := http.Get(url.Value)
+			if err != nil {
+				return newError("http.get failed: %s", err)
+			}
+			defer resp.Body.Close()
+
+			bodyBytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return newError("failed to read response body: %s", err)
+			}
+
+			// Return Response object
+			fields := make(map[string]Object)
+			fields["status"] = &Integer{Value: int64(resp.StatusCode)}
+			fields["body"] = &String{Value: string(bodyBytes)}
+
+			// Headers
+			headerMap := &Map{Pairs: make(map[Object]Object)}
+			for k, v := range resp.Header {
+				if len(v) > 0 {
+					headerMap.Pairs[&String{Value: k}] = &String{Value: v[0]}
+				}
+			}
+			fields["headers"] = headerMap
+
+			return &StructInstance{Name: "Response", Fields: fields}
+		},
+	}
+
+	// http.post(url, body, headers)
+	httpModule["post"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) < 2 {
+				return newError("http.post expects at least 2 arguments (url, body)")
+			}
+			url, ok := args[0].(*String)
+			if !ok {
+				return newError("http.post url must be STRING")
+			}
+
+			var bodyReader io.Reader
+			if args[1] != NULL {
+				bodyStr, ok := args[1].(*String)
+				if !ok {
+					return newError("http.post body must be STRING or NULL")
+				}
+				bodyReader = strings.NewReader(bodyStr.Value)
+			}
+
+			req, err := http.NewRequest("POST", url.Value, bodyReader)
+			if err != nil {
+				return newError("failed to create request: %s", err)
+			}
+
+			// Optional headers
+			if len(args) > 2 {
+				headers, ok := args[2].(*Map)
+				if ok {
+					for k, v := range headers.Pairs {
+						keyStr, ok1 := k.(*String)
+						valStr, ok2 := v.(*String)
+						if ok1 && ok2 {
+							req.Header.Set(keyStr.Value, valStr.Value)
+						}
+					}
+				}
+			}
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				return newError("http.post failed: %s", err)
+			}
+			defer resp.Body.Close()
+
+			bodyBytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return newError("failed to read response body: %s", err)
+			}
+
+			// Return Response object
+			fields := make(map[string]Object)
+			fields["status"] = &Integer{Value: int64(resp.StatusCode)}
+			fields["body"] = &String{Value: string(bodyBytes)}
+
+			// Headers
+			headerMap := &Map{Pairs: make(map[Object]Object)}
+			for k, v := range resp.Header {
+				if len(v) > 0 {
+					headerMap.Pairs[&String{Value: k}] = &String{Value: v[0]}
+				}
+			}
+			fields["headers"] = headerMap
+
+			return &StructInstance{Name: "Response", Fields: fields}
+		},
+	}
+
+	env.store["http"] = &StructInstance{Name: "HTTP", Fields: httpModule}
+
 	return env
 }
 
@@ -1455,6 +1682,10 @@ func Eval(node ast.Node, env *Environment) Object {
 		return evalForStatement(node, env)
 	case *ast.ModuleStatement:
 		return evalModuleStatement(node, env)
+	case *ast.ImportStatement:
+		return evalImportStatement(node, env)
+	case *ast.FromImportStatement:
+		return evalFromImportStatement(node, env)
 	case *ast.TypeStatement:
 		return evalTypeStatement(node, env)
 	case *ast.IntegerLiteral:
@@ -2236,6 +2467,78 @@ func evalModuleStatement(ms *ast.ModuleStatement, env *Environment) Object {
 	}
 	env.Set(ms.Name.Value, mod)
 	return mod
+}
+
+func evalImportStatement(node *ast.ImportStatement, env *Environment) Object {
+	path := node.Path.Value
+	// Read file
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return newError("failed to read import file %s: %s", path, err)
+	}
+
+	// Parse
+	l := lexer.New(string(content))
+	p := parser.New(l)
+	program := p.ParseProgram()
+	if len(p.Errors()) > 0 {
+		return newError("parse errors in %s: %s", path, strings.Join(p.Errors(), ", "))
+	}
+
+	// Evaluate in new env
+	newEnv := NewEnvironment()
+	evalProgram(program, newEnv)
+
+	// For `import "path"`, we could bind the module to a variable derived from path
+	// But for now, let's just execute it (like include) to keep it simple,
+	// or we can implement `import x` later where x is an identifier.
+	// Given the string literal, let's treat it as "execute in current scope" (mixin) for now?
+	// OR better: execute in new scope and return NULL (just side effects? no that's useless).
+	// Let's make it execute in CURRENT scope (mixin) for `import "file"`.
+	// This allows splitting code easily.
+	evalProgram(program, env)
+
+	return NULL
+}
+
+func evalFromImportStatement(node *ast.FromImportStatement, env *Environment) Object {
+	path := node.Path.Value
+	// Read file
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return newError("failed to read import file %s: %s", path, err)
+	}
+
+	// Parse
+	l := lexer.New(string(content))
+	p := parser.New(l)
+	program := p.ParseProgram()
+	if len(p.Errors()) > 0 {
+		return newError("parse errors in %s: %s", path, strings.Join(p.Errors(), ", "))
+	}
+
+	// Evaluate in new env
+	newEnv := NewEnvironment()
+	evalProgram(program, newEnv)
+
+	// Import all symbols
+	if node.ImportAll {
+		for k, v := range newEnv.store {
+			env.Set(k, v)
+		}
+		return NULL
+	}
+
+	// Extract symbols
+	for _, ident := range node.Symbols {
+		val, ok := newEnv.Get(ident.Value)
+		if !ok {
+			return newError("symbol %s not found in %s", ident.Value, path)
+		}
+		env.Set(ident.Value, val)
+	}
+
+	return NULL
 }
 
 func evalTypeStatement(ts *ast.TypeStatement, env *Environment) Object {

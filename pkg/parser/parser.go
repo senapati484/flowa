@@ -98,6 +98,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.USE, p.parseIdentifier)
 	p.registerPrefix(token.SERVICE, p.parseIdentifier)
 	p.registerPrefix(token.ON, p.parseIdentifier)
+	p.registerPrefix(token.ON, p.parseIdentifier)
 
 	// Read two tokens, so curToken and peekToken are both set
 	p.nextToken()
@@ -145,6 +146,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseModuleStatement()
 	case token.IMPORT:
 		return p.parseImportStatement()
+	case token.FROM:
+		return p.parseFromImportStatement()
 	case token.TYPE:
 		return p.parseTypeStatement()
 	case token.SERVICE:
@@ -153,6 +156,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseRouteStatement()
 	case token.USE:
 		return p.parseMiddlewareStatement()
+	case token.DEFER:
+		return p.parseDeferStatement()
 	case token.NEWLINE:
 		return nil
 	case token.IDENT:
@@ -351,7 +356,44 @@ func (p *Parser) parseModuleStatement() *ast.ModuleStatement {
 	return stmt
 }
 
-func (p *Parser) parseImportStatement() *ast.ImportStatement {
+func (p *Parser) parseImportStatement() ast.Statement {
+	// Check if it's `import { ... } from "path"`
+	if p.peekTokenIs(token.LBRACE) {
+		stmt := &ast.FromImportStatement{Token: p.curToken} // Reuse FromImportStatement
+		p.nextToken()                                       // consume import
+
+		// Parse symbols inside { ... }
+		p.nextToken() // consume {
+
+		if !p.curTokenIs(token.IDENT) {
+			return nil
+		}
+
+		stmt.Symbols = append(stmt.Symbols, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+
+		for p.peekTokenIs(token.COMMA) {
+			p.nextToken()
+			p.nextToken()
+			stmt.Symbols = append(stmt.Symbols, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+		}
+
+		if !p.expectPeek(token.RBRACE) {
+			return nil
+		}
+
+		if !p.expectPeek(token.FROM) {
+			return nil
+		}
+
+		if !p.expectPeek(token.STRING) {
+			return nil
+		}
+
+		stmt.Path = &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
+		return stmt
+	}
+
+	// Normal `import "path"`
 	stmt := &ast.ImportStatement{Token: p.curToken}
 
 	if !p.expectPeek(token.STRING) {
@@ -360,8 +402,41 @@ func (p *Parser) parseImportStatement() *ast.ImportStatement {
 
 	stmt.Path = &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
 
-	if p.peekTokenIs(token.NEWLINE) {
+	return stmt
+}
+
+func (p *Parser) parseFromImportStatement() ast.Statement {
+	stmt := &ast.FromImportStatement{Token: p.curToken}
+
+	// from "path"
+	if !p.expectPeek(token.STRING) {
+		return nil
+	}
+	stmt.Path = &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
+
+	// import
+	if !p.expectPeek(token.IMPORT) {
+		return nil
+	}
+
+	// Check for wildcard *
+	if p.peekTokenIs(token.ASTERISK) {
 		p.nextToken()
+		stmt.ImportAll = true
+		return stmt
+	}
+
+	// symbol, symbol, ...
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Symbols = append(stmt.Symbols, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		stmt.Symbols = append(stmt.Symbols, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
 	}
 
 	return stmt
@@ -585,6 +660,49 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	return exp
 }
 
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	exp := &ast.CallExpression{Token: p.curToken, Function: function}
+	exp.Arguments = p.parseCallArguments()
+	return exp
+}
+
+func (p *Parser) parseCallArguments() []ast.Expression {
+	args := []ast.Expression{}
+
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return args
+	}
+
+	p.nextToken()
+	args = append(args, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	return args
+}
+
+func (p *Parser) parseDeferStatement() *ast.DeferStatement {
+	stmt := &ast.DeferStatement{Token: p.curToken}
+
+	p.nextToken()
+	stmt.Call = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.NEWLINE) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
 func (p *Parser) parseIfExpression() ast.Expression {
 	expression := &ast.IfExpression{Token: p.curToken}
 
@@ -629,36 +747,6 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	}
 
 	return expression
-}
-
-func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
-	exp := &ast.CallExpression{Token: p.curToken, Function: function}
-	exp.Arguments = p.parseCallArguments()
-	return exp
-}
-
-func (p *Parser) parseCallArguments() []ast.Expression {
-	args := []ast.Expression{}
-
-	if p.peekTokenIs(token.RPAREN) {
-		p.nextToken()
-		return args
-	}
-
-	p.nextToken()
-	args = append(args, p.parseExpression(LOWEST))
-
-	for p.peekTokenIs(token.COMMA) {
-		p.nextToken()
-		p.nextToken()
-		args = append(args, p.parseExpression(LOWEST))
-	}
-
-	if !p.expectPeek(token.RPAREN) {
-		return nil
-	}
-
-	return args
 }
 
 func (p *Parser) parsePipelineExpression(left ast.Expression) ast.Expression {
@@ -761,11 +849,12 @@ func (p *Parser) parseMapLiteral() ast.Expression {
 func (p *Parser) parseMemberExpression(object ast.Expression) ast.Expression {
 	expression := &ast.MemberExpression{Token: p.curToken, Object: object}
 
-	if !p.expectPeek(token.IDENT) {
-		return nil
-	}
+	p.nextToken()
 
+	// Allow keywords as property names (e.g., http.get, http.post)
+	// This includes GET, POST, PUT, DELETE, etc.
 	expression.Property = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
 	return expression
 }
 

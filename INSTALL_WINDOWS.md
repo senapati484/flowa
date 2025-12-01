@@ -51,7 +51,7 @@ Open a new PowerShell window and run:
 
 ```powershell
 flowa --version
-flowa run examples/hello.flowa
+flowa examples/hello.flowa
 ```
 
 ## Uninstalling
