@@ -37,80 +37,48 @@ service API on ":8080":
 
 ## 📦 Installation
 
-### Prerequisites
+### macOS/Linux
 
-**Go 1.20+** must be installed on your system.
-
+**Quick Install (Recommended):**
 ```bash
-# Check Go installation
-go version
-```
-
-Don't have Go? [Install Go](https://go.dev/doc/install) first.
-
-### Install Flowa (macOS/Linux)
-
-#### Homebrew (Recommended)
-
-```bash
+# Using Homebrew
 brew tap senapati484/flowa
 brew install flowa
 ```
 
-#### From Source
-
+**From Source:**
 ```bash
 git clone https://github.com/senapati484/flowa
 cd flowa
-go build -o flowa ./cmd/flowa
-sudo mv flowa /usr/local/bin/
+./install.sh
 ```
 
-### Verify Installation
-
+**Verify:**
 ```bash
-flowa --version
-# Flowa 0.1.0
+flowa --version  # Flowa 0.1.1
 ```
+
+> **Note:** Requires Go 1.20+. [Install Go](https://go.dev/doc/install) if needed.
+> 
+> For detailed installation instructions, see:
+> - [Mac/Linux Installation Guide](INSTALL_MAC_LINUX.md)
+> - [Windows Installation Guide](INSTALL_WINDOWS.md)
 
 ---
 
 ## 🎯 Why Flowa?
 
-### Built on Go, Better than Go
+Flowa combines **Python's simplicity** with **Go's performance**, plus built-in features that usually require frameworks:
 
-Flowa inherits Go's performance and reliability, but adds:
-
-1. **🚄 Faster Development**
-   - No boilerplate (no `package main`, `import`, `func main()`)
-   - Python-style syntax you already know
-   - No manual error handling everywhere
-
-2. **🔋 Standard Library on Steroids**
-   - Authentication (bcrypt) built-in
-   - JWT signing & verification
-   - WebSocket support
-   - SMTP email with templates
-   - No need for external frameworks
-
-3. **📊 Pipeline Operator**
-   ```python
-   # Traditional
-   save(optimize(resize(image)))
-   
-   # Flowa
-   image |> resize() |> optimize() |> save()
-   ```
-
-4. **⚡ Single Binary**
-   - No virtual environments
-   - No dependency hell
-   - Just one executable
+- **🚄 Faster Development** – No boilerplate, Python-style syntax
+- **🔋 Batteries Included** – Auth, JWT, WebSocket, Email built-in
+- **📊 Pipeline Operator** – Clean data transformations with `|>`
+- **⚡ Single Binary** – No dependencies, just one executable
 
 ### vs Other Languages
 
 | Feature | Flowa | Python | Go | Node.js |
-|---------|-------|--------|-------|---------|
+|---------|-------|--------|-------|------------|
 | Easy Syntax | ✅ | ✅ | ❌ | ✅ |
 | Fast Performance | ✅ | ❌ | ✅ | ⚠️ |
 | Built-in Auth | ✅ | ❌ | ❌ | ❌ |
@@ -122,163 +90,112 @@ Flowa inherits Go's performance and reliability, but adds:
 
 ## 🧪 Quick Start
 
-### 1. Hello World
-
+**1. Hello World**
 ```python
 # hello.flowa
 def greet(name):
     return "Hello, " + name
 
-result = greet("World")
-print(result)
+print(greet("World"))  # Hello, World
 ```
 
-```bash
-flowa hello.flowa
-# Hello, World
-```
-
-### 2. Pipeline Example
-
+**2. Pipeline Example**
 ```python
-# pipeline.flowa
-def increment(x):
-    return x + 1
-
-def square(x):
-    return x * x
+def increment(x): return x + 1
+def square(x): return x * x
 
 result = 5 |> increment() |> square()
 print(result)  # 36
 ```
 
-### 3. Create a Server (The Flowa Way)
-
+**3. Simple Web Server**
 ```python
-# server.flowa
 def hello(req):
-    name = req.query["name"]
-    return response.json({"message": "Hello, " + name}, 200)
+    return response.json({"message": "Hello, Flowa!"}, 200)
 
-def get_user(req):
-    id = req.params["id"]
-    return response.json({"user_id": id}, 200)
-
-service MyAPI on ":8080":
+service API on ":8080":
     get "/" -> hello
-    get "/users/:id" -> get_user
 ```
 
-```bash
-flowa server.flowa
-# Starting service MyAPI on :8080
-```
-
-**Test it:**
-```bash
-curl "http://localhost:8080?name=Flowa"
-# {"message":"Hello, Flowa"}
-
-curl "http://localhost:8080/users/123"
-# {"user_id":"123"}
-```
+Run it: `flowa server.flowa`
 
 ---
 
 ## 🔥 Key Features
 
-### 🌐 HTTP Server Made Easy
-
-No framework needed. Built-in routing, middleware, and response helpers.
-
+**🌐 HTTP Server** – Built-in routing and middleware
 ```python
 service API on ":8080":
-    get "/health" -> health_check
-    post "/users" -> create_user
     get "/users/:id" -> get_user
+    post "/users" -> create_user
 ```
 
-### 🔐 Authentication Built-in
-
-Bcrypt password hashing out of the box.
-
+**🔐 Authentication** – Bcrypt password hashing
 ```python
 hash = auth.hash_password("secret123")
-valid = auth.verify_password(hash, "secret123")  # True
+valid = auth.verify_password(hash, "secret123")
 ```
 
-### 🎫 JWT Tokens
-
-Sign and verify JSON Web Tokens for stateless auth.
-
+**🎫 JWT Tokens** – Stateless authentication
 ```python
 token = jwt.sign({"user_id": 123}, "secret", "24h")
 claims = jwt.verify(token, "secret")
 ```
 
-### 🔌 WebSocket Support
-
-Real-time bidirectional communication.
-
+**🔌 WebSocket** – Real-time communication
 ```python
 def chat(req):
     conn = websocket.upgrade(req)
-    while True:
-        msg = websocket.read(conn)
-        websocket.send(conn, "Echo: " + msg)
+    msg = websocket.read(conn)
+    websocket.send(conn, "Echo: " + msg)
 ```
 
-### 📧 Email with Templates
-
-SMTP email sending with template support.
-
+**📧 Email** – SMTP with HTML templates
 ```python
-mail.send_template("Hello {{name}}", {
+mail.send({
     "to": "user@example.com",
-    "name": "Alice"
+    "subject": "Welcome!",
+    "html": "<h1>Hello!</h1>"
 })
 ```
 
 ---
 
-## 📚 Learn More
+## 📚 Documentation
 
-- **[📖 Full Documentation](DOCUMENTATION.md)** – Complete language guide with examples
-- **[🔌 API Reference](API.md)** – All built-in modules and functions
-- **[💻 Examples](examples/)** – Sample projects and code
+- **[📖 Complete Guide](DOCUMENTATION.md)** – Full language reference
+- **[🔌 API Reference](API.md)** – All built-in modules
+- **[💻 Examples](examples/)** – Sample projects
+- **[🚀 Quick Start](QUICKSTART.md)** – Get started in 5 minutes
 
 ---
 
 ## 📊 Implementation Status
 
-### ✅ Complete Features
-- [x] Lexer with indentation
-- [x] Parser with pipeline operator
-- [x] AST interpreter
-- [x] Functions and closures
-- [x] REPL and CLI
-- [x] **String escape sequences** (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`)
-- [x] **JSON encoding/decoding**
-- [x] **HTTP server with routing**
-- [x] **Response helpers**
-- [x] **Config (environment variables, `config.env()`)**
-- [x] **Middleware (logger, CORS)**
-- [x] **Mail (SMTP with templates)**
-- [x] **Auth (bcrypt password hashing)**
-- [x] **JWT (token sign/verify)**
-- [x] **WebSockets (real-time communication)**
+### ✅ Complete
+- [x] Lexer, Parser, AST Interpreter
+- [x] Functions, closures, pipelines
+- [x] String operations with escape sequences
+- [x] JSON encoding/decoding
+- [x] HTTP server with routing
+- [x] Response helpers (JSON, HTML, text)
+- [x] Environment configuration
+- [x] Middleware (logger, CORS)
+- [x] Mail (SMTP with templates)
+- [x] Auth (bcrypt hashing)
+- [x] JWT (sign/verify)
+- [x] WebSocket support
 
 ### 🚧 In Progress
-- [ ] Database module (SQL, migrations)
 - [ ] File system module
 - [ ] HTTP client module
+- [ ] Database support
 - [ ] Type system
 
-### 🔮 Future
-- [ ] Native compilation (LLVM)
-- [ ] M:N scheduler for async
-- [ ] Static typing
+### 🔮 Planned
 - [ ] Package manager
+- [ ] Static typing
+- [ ] Native compilation
 
 ---
 
