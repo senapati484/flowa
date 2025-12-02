@@ -167,6 +167,7 @@ mail.send({
 - **[🔌 API Reference](API.md)** – All built-in modules
 - **[💻 Examples](examples/)** – Sample projects
 - **[🚀 Quick Start](QUICKSTART.md)** – Get started in 5 minutes
+- **[📊 Benchmarks](benchmarks/RESULTS.md)** – Performance comparisons
 
 ---
 

@@ -13,55 +13,69 @@ import (
 
 	"flowa/pkg/ast"
 	"flowa/pkg/lexer"
+	"flowa/pkg/opcode"
 	"flowa/pkg/parser"
 
 	"github.com/gorilla/websocket"
 	"gopkg.in/gomail.v2"
 )
 
+// Object is the interface that all Flowa values implement.
 type Object interface {
-	Type() string
+	Kind() ObjectKind
 	Inspect() string
 }
 
 type Integer struct {
 	Value int64
+	kind  ObjectKind
 }
 
-func (i *Integer) Type() string    { return "INTEGER" }
+func (i *Integer) Kind() ObjectKind {
+	if i.kind == 0 { // Lazy initialization for any Integer not created through NewInteger
+		i.kind = KindInteger
+	}
+	return i.kind
+}
 func (i *Integer) Inspect() string { return fmt.Sprintf("%d", i.Value) }
 
 type String struct {
 	Value string
+	kind  ObjectKind
 }
 
-func (s *String) Type() string    { return "STRING" }
-func (s *String) Inspect() string { return s.Value }
+func (s *String) Kind() ObjectKind { return KindString }
+func (s *String) Inspect() string  { return s.Value }
 
 type Native struct {
 	Value interface{}
+	kind  ObjectKind
 }
 
-func (n *Native) Type() string    { return "NATIVE" }
-func (n *Native) Inspect() string { return fmt.Sprintf("%v", n.Value) }
+func (n *Native) Kind() ObjectKind { return KindNative }
+func (n *Native) Inspect() string  { return fmt.Sprintf("%v", n.Value) }
 
 type Boolean struct {
 	Value bool
+	kind  ObjectKind
 }
 
-func (b *Boolean) Type() string    { return "BOOLEAN" }
-func (b *Boolean) Inspect() string { return fmt.Sprintf("%t", b.Value) }
+func (b *Boolean) Kind() ObjectKind { return KindBoolean }
+func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
 
-type Null struct{}
+type Null struct {
+	kind ObjectKind
+}
 
-func (n *Null) Type() string    { return "NULL" }
-func (n *Null) Inspect() string { return "null" }
+func (n *Null) Kind() ObjectKind { return KindNull }
+func (n *Null) Inspect() string  { return "null" }
 
 type Array struct {
 	Elements []Object
+	kind     ObjectKind
 }
 
-func (a *Array) Type() string { return "ARRAY" }
+func (a *Array) Kind() ObjectKind { return KindArray }
 func (a *Array) Inspect() string {
 	var out []string
 	for _, e := range a.Elements {
@@ -72,39 +86,50 @@ func (a *Array) Inspect() string {
 
 type ReturnValue struct {
 	Value Object
+	kind  ObjectKind
 }
 
-func (rv *ReturnValue) Type() string    { return "RETURN_VALUE" }
-func (rv *ReturnValue) Inspect() string { return rv.Value.Inspect() }
+func (rv *ReturnValue) Kind() ObjectKind { return KindReturnValue }
+func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
 
 type ErrorObj struct {
 	Message string
+	kind    ObjectKind
 }
 
-func (e *ErrorObj) Type() string    { return "ERROR" }
-func (e *ErrorObj) Inspect() string { return "ERROR: " + e.Message }
+func (e *ErrorObj) Kind() ObjectKind { return KindError }
+func (e *ErrorObj) Inspect() string  { return "ERROR: " + e.Message }
 
 type Function struct {
 	Parameters []*ast.Identifier
 	Body       *ast.BlockStatement
 	Env        *Environment
+	kind       ObjectKind
+
+	// Slot-based optimization: layout of local variables
+	SlotCount    int                 // Number of slots allocated for this function's locals
+	SlotNames    []string            // Names of parameters + local variables (indexed by slot)
+	SlotIDs      []*InternedString   // Interned identifiers for fast lookups
+	Instructions opcode.Instructions // Bytecode for this function
 }
 
-func (f *Function) Type() string    { return "FUNCTION" }
-func (f *Function) Inspect() string { return "function" }
+func (f *Function) Kind() ObjectKind { return KindFunction }
+func (f *Function) Inspect() string  { return "function" }
 
 type BuiltinFunction struct {
-	Fn func(args ...Object) Object
+	Fn   func(args ...Object) Object
+	kind ObjectKind
 }
 
-func (b *BuiltinFunction) Type() string    { return "BUILTIN" }
-func (b *BuiltinFunction) Inspect() string { return "builtin function" }
+func (b *BuiltinFunction) Kind() ObjectKind { return KindBuiltin }
+func (b *BuiltinFunction) Inspect() string  { return "builtin function" }
 
 type Map struct {
 	Pairs map[Object]Object
+	kind  ObjectKind
 }
 
-func (m *Map) Type() string { return "MAP" }
+func (m *Map) Kind() ObjectKind { return KindMap }
 func (m *Map) Inspect() string {
 	var out []string
 	for k, v := range m.Pairs {
@@ -116,12 +141,15 @@ func (m *Map) Inspect() string {
 // Task represents the result of a spawned computation.
 // For now this is a simple wrapper around a value – evaluation is still synchronous.
 type Task struct {
-	Result Object
+	Fn     *Function
+	Args   []Object
+	kind   ObjectKind
 	Done   bool
+	Result Object
 }
 
-func (t *Task) Type() string    { return "TASK" }
-func (t *Task) Inspect() string { return "task(" + t.Result.Inspect() + ")" }
+func (t *Task) Kind() ObjectKind { return KindTask }
+func (t *Task) Inspect() string  { return "task(" + t.Result.Inspect() + ")" }
 func (t *Task) Await() Object {
 	for !t.Done {
 		time.Sleep(1 * time.Millisecond)
@@ -133,9 +161,10 @@ func (t *Task) Await() Object {
 type StructInstance struct {
 	Name   string
 	Fields map[string]Object
+	kind   ObjectKind
 }
 
-func (s *StructInstance) Type() string { return "STRUCT_INSTANCE" }
+func (s *StructInstance) Kind() ObjectKind { return KindStructInstance }
 func (s *StructInstance) Inspect() string {
 	parts := make([]string, 0, len(s.Fields))
 	for k, v := range s.Fields {
@@ -150,7 +179,7 @@ type Module struct {
 	Env  *Environment
 }
 
-func (m *Module) Type() string { return "MODULE" }
+func (m *Module) Kind() ObjectKind { return KindModule }
 func (m *Module) Inspect() string {
 	return "module " + m.Name
 }
@@ -158,9 +187,10 @@ func (m *Module) Inspect() string {
 // Route configuration for HTTP server with path parameter support
 type routeDef struct {
 	Method      string
-	Path        string   // Original path like "/users/:id"
-	PathPattern string   // Regex pattern for matching
-	ParamNames  []string // Names of path parameters
+	Path        string         // Original path like "/users/:id"
+	PathPattern string         // Regex pattern as string (for debugging / introspection)
+	PathRegex   *regexp.Regexp // Precompiled regex for matching
+	ParamNames  []string       // Names of path parameters
 	Handler     *Function
 	Middlewares []Object // Route-specific middleware
 }
@@ -169,15 +199,22 @@ var registeredRoutes []routeDef
 var globalMiddlewares []Object // Global middleware applied to all routes
 
 type Environment struct {
-	store map[string]Object
-	outer *Environment
+	store     map[string]Object // Map storage for globals and dynamic bindings
+	outer     *Environment      // Parent environment for scope chain
+	slots     []Object          // Pre-allocated slots for local variables (function scope optimization)
+	slotIndex map[string]int    // Maps variable names to slot indices
+	slotNames []string          // Names of variables in slots (for debugging)
 }
 
 func NewEnvironment() *Environment {
 	s := make(map[string]Object)
 	env := &Environment{store: s, outer: nil}
 
-	// Add built-in print function
+	// -----------------------------
+	// Core utility & I/O builtins
+	// -----------------------------
+
+	// Add built-in print function (debug / general I/O – relatively slow)
 	env.store["print"] = &BuiltinFunction{
 		Fn: func(args ...Object) Object {
 			for i, arg := range args {
@@ -197,15 +234,16 @@ func NewEnvironment() *Environment {
 			if len(args) != 1 {
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
-			switch arg := args[0].(type) {
-			case *String:
-				return &Integer{Value: int64(len(arg.Value))}
-			case *Map:
-				return &Integer{Value: int64(len(arg.Pairs))}
+
+			switch obj := args[0].(type) {
 			case *Array:
-				return &Integer{Value: int64(len(arg.Elements))}
+				return &Integer{Value: int64(len(obj.Elements))}
+			case *String:
+				return &Integer{Value: int64(len(obj.Value))}
+			case *Map:
+				return &Integer{Value: int64(len(obj.Pairs))}
 			default:
-				return newError("argument to `len` not supported, got %s", args[0].Type())
+				return newError("argument to `len` not supported, got %s", obj.Kind())
 			}
 		},
 	}
@@ -216,8 +254,8 @@ func NewEnvironment() *Environment {
 			if len(args) != 1 {
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
-			if args[0].Type() != "ARRAY" {
-				return newError("argument to `first` must be ARRAY, got %s", args[0].Type())
+			if args[0].Kind() != KindArray {
+				return newError("argument to `first` must be ARRAY, got %s", args[0].Kind())
 			}
 			array := args[0].(*Array)
 			if len(array.Elements) > 0 {
@@ -233,8 +271,8 @@ func NewEnvironment() *Environment {
 			if len(args) != 1 {
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
-			if args[0].Type() != "ARRAY" {
-				return newError("argument to `last` must be ARRAY, got %s", args[0].Type())
+			if args[0].Kind() != KindArray {
+				return newError("argument to `last` must be ARRAY, got %s", args[0].Kind())
 			}
 			array := args[0].(*Array)
 			if len(array.Elements) > 0 {
@@ -250,8 +288,8 @@ func NewEnvironment() *Environment {
 			if len(args) != 1 {
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
-			if args[0].Type() != "ARRAY" {
-				return newError("argument to `rest` must be ARRAY, got %s", args[0].Type())
+			if args[0].Kind() != KindArray {
+				return newError("argument to `rest` must be ARRAY, got %s", args[0].Kind())
 			}
 			array := args[0].(*Array)
 			length := len(array.Elements)
@@ -270,8 +308,8 @@ func NewEnvironment() *Environment {
 			if len(args) != 2 {
 				return newError("wrong number of arguments. got=%d, want=2", len(args))
 			}
-			if args[0].Type() != "ARRAY" {
-				return newError("first argument to `push` must be ARRAY, got %s", args[0].Type())
+			if args[0].Kind() != KindArray {
+				return newError("first argument to `push` must be ARRAY, got %s", args[0].Kind())
 			}
 			array := args[0].(*Array)
 			length := len(array.Elements)
@@ -298,8 +336,8 @@ func NewEnvironment() *Environment {
 			if len(args) != 1 {
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
-			if args[0].Type() != "STRING" {
-				return newError("argument to `http_get` must be STRING, got %s", args[0].Type())
+			if args[0].Kind() != KindString {
+				return newError("argument to `http_get` must be STRING, got %s", args[0].Kind())
 			}
 			url := args[0].(*String).Value
 			resp, err := http.Get(url)
@@ -318,7 +356,7 @@ func NewEnvironment() *Environment {
 			}
 			urlObj, ok := args[0].(*String)
 			if !ok {
-				return newError("argument to `async_http_get` must be STRING, got %s", args[0].Type())
+				return newError("argument to `async_http_get` must be STRING, got %s", args[0].Kind())
 			}
 
 			task := &Task{Done: false}
@@ -346,8 +384,8 @@ func NewEnvironment() *Environment {
 			if len(args) != 2 {
 				return newError("wrong number of arguments. got=%d, want=2", len(args))
 			}
-			if args[0].Type() != "INTEGER" || args[1].Type() != "INTEGER" {
-				return newError("arguments to `min` must be INTEGER, got %s and %s", args[0].Type(), args[1].Type())
+			if args[0].Kind() != KindInteger || args[1].Kind() != KindInteger {
+				return newError("arguments to `min` must be INTEGER, got %s and %s", args[0].Kind(), args[1].Kind())
 			}
 			a := args[0].(*Integer).Value
 			b := args[1].(*Integer).Value
@@ -363,8 +401,8 @@ func NewEnvironment() *Environment {
 			if len(args) != 2 {
 				return newError("wrong number of arguments. got=%d, want=2", len(args))
 			}
-			if args[0].Type() != "INTEGER" || args[1].Type() != "INTEGER" {
-				return newError("arguments to `max` must be INTEGER, got %s and %s", args[0].Type(), args[1].Type())
+			if args[0].Kind() != KindInteger || args[1].Kind() != KindInteger {
+				return newError("arguments to `max` must be INTEGER, got %s and %s", args[0].Kind(), args[1].Kind())
 			}
 			a := args[0].(*Integer).Value
 			b := args[1].(*Integer).Value
@@ -397,12 +435,11 @@ func NewEnvironment() *Environment {
 					if len(args) != 1 {
 						return newError("wrong number of arguments. got=%d, want=1", len(args))
 					}
-					strObj, ok := args[0].(*String)
-					if !ok {
-						return newError("argument to `json.decode` must be STRING, got %s", args[0].Type())
+					if args[0].Kind() != KindString {
+						return newError("argument to `json.decode` must be STRING, got %s", args[0].Kind())
 					}
 					var native interface{}
-					err := json.Unmarshal([]byte(strObj.Value), &native)
+					err := json.Unmarshal([]byte(args[0].(*String).Value), &native)
 					if err != nil {
 						return newError("json decode error: %s", err)
 					}
@@ -629,6 +666,65 @@ func NewEnvironment() *Environment {
 		},
 	}
 	env.store["middleware"] = middlewareModule
+
+	// time module - high resolution timing helpers for benchmarking
+	timeModule := &StructInstance{
+		Name: "Time",
+		Fields: map[string]Object{
+			// time.now_ms() -> current time in milliseconds since Unix epoch
+			"now_ms": &BuiltinFunction{
+				Fn: func(args ...Object) Object {
+					if len(args) != 0 {
+						return newError("time.now_ms expects 0 arguments")
+					}
+					ms := time.Now().UnixNano() / int64(time.Millisecond)
+					return &Integer{Value: ms}
+				},
+			},
+			// time.since_ms(start_ms) -> elapsed milliseconds since start_ms
+			"since_ms": &BuiltinFunction{
+				Fn: func(args ...Object) Object {
+					if len(args) != 1 {
+						return newError("time.since_ms expects 1 INTEGER argument (start_ms)")
+					}
+					if args[0].Kind() != KindInteger {
+						return newError("time.since_ms argument must be INTEGER, got %s", args[0].Kind())
+					}
+					start := args[0].(*Integer).Value
+					nowMs := time.Now().UnixNano() / int64(time.Millisecond)
+					return &Integer{Value: nowMs - start}
+				},
+			},
+			// time.since_s(start_ms[, precision]) -> formatted seconds string with fractional part
+			"since_s": &BuiltinFunction{
+				Fn: func(args ...Object) Object {
+					if len(args) < 1 || len(args) > 2 {
+						return newError("time.since_s expects 1 or 2 arguments: (start_ms[, precision])")
+					}
+					if args[0].Kind() != KindInteger {
+						return newError("time.since_s first argument must be INTEGER (start_ms), got %s", args[0].Kind())
+					}
+					precision := 3
+					if len(args) == 2 {
+						if args[1].Kind() != KindInteger {
+							return newError("time.since_s precision argument must be INTEGER, got %s", args[1].Kind())
+						}
+						precision = int(args[1].(*Integer).Value)
+						if precision < 0 {
+							precision = 0
+						}
+					}
+					start := args[0].(*Integer).Value
+					nowMs := time.Now().UnixNano() / int64(time.Millisecond)
+					deltaMs := nowMs - start
+					secs := float64(deltaMs) / 1000.0
+					fmtStr := fmt.Sprintf("%%.%df", precision)
+					return &String{Value: fmt.Sprintf(fmtStr, secs)}
+				},
+			},
+		},
+	}
+	env.store["time"] = timeModule
 
 	// mail module - SMTP email sending (similar to nodemailer)
 	mailModule := &StructInstance{
@@ -983,8 +1079,8 @@ func NewEnvironment() *Environment {
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
 			// For tap, we expect the function as argument
-			if args[0].Type() != "FUNCTION" && args[0].Type() != "BUILTIN" {
-				return newError("argument to `tap` must be FUNCTION, got %s", args[0].Type())
+			if args[0].Kind() != KindFunction && args[0].Kind() != KindBuiltin {
+				return newError("argument to `tap` must be FUNCTION, got %s", args[0].Kind())
 			}
 			// Note: tap is meant to be used in pipelines, so the actual value
 			// being tapped will come from the pipeline context, not here
@@ -998,7 +1094,7 @@ func NewEnvironment() *Environment {
 			if len(args) != 1 {
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
-			fmt.Printf("[DEBUG] Type: %s, Value: %s\n", args[0].Type(), args[0].Inspect())
+			fmt.Printf("[DEBUG] Kind: %s, Value: %s\n", args[0].Kind(), args[0].Inspect())
 			return args[0]
 		},
 	}
@@ -1011,7 +1107,7 @@ func NewEnvironment() *Environment {
 			}
 			intArg, ok := args[0].(*Integer)
 			if !ok {
-				return newError("argument to `range` must be INTEGER, got %s", args[0].Type())
+				return newError("argument to `range` must be INTEGER, got %s", args[0].Kind())
 			}
 			n := intArg.Value
 			if n < 0 {
@@ -1022,6 +1118,109 @@ func NewEnvironment() *Environment {
 				elements = append(elements, &Integer{Value: i})
 			}
 			return &Array{Elements: elements}
+		},
+	}
+
+	// -----------------------------------------------
+	// Numeric performance-builtins (fast primitives)
+	// -----------------------------------------------
+	//
+	// These are implemented fully in Go and operate on primitive int64
+	// values without allocating per-iteration Integer objects. They are
+	// intended for compute-heavy workloads (like benchmarks or analytics)
+	// where you would otherwise write large numeric loops in Flowa.
+	//
+	// NOTE: They are explicit opt-in APIs – callers must choose to use
+	// them, which keeps semantics obvious and avoids surprising behavior.
+
+	// fast_sum_to(n) -> sum_{i=0}^{n-1} i
+	// Example: fast_sum_to(10) == 45
+	env.store["fast_sum_to"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 1 {
+				return newError("fast_sum_to expects 1 INTEGER argument (n)")
+			}
+			nInt, ok := args[0].(*Integer)
+			if !ok {
+				return newError("fast_sum_to argument must be INTEGER, got %s", args[0].Kind())
+			}
+			n := nInt.Value
+			if n < 0 {
+				return newError("fast_sum_to argument must be non-negative, got %d", n)
+			}
+
+			// Use pure Go int64 loop; only allocate final Integer.
+			var sum int64
+			for i := int64(0); i < n; i++ {
+				sum += i
+			}
+			return &Integer{Value: sum}
+		},
+	}
+
+	// fast_sum_range(start, end) -> sum_{i=start}^{end-1} i
+	// Useful when you need an offset range; still avoids per-iteration
+	// boxing and expression evaluation in the interpreter.
+	env.store["fast_sum_range"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 2 {
+				return newError("fast_sum_range expects 2 INTEGER arguments (start, end)")
+			}
+			startInt, ok1 := args[0].(*Integer)
+			endInt, ok2 := args[1].(*Integer)
+			if !ok1 || !ok2 {
+				return newError("fast_sum_range arguments must be INTEGER, got %s and %s", args[0].Kind(), args[1].Kind())
+			}
+			start := startInt.Value
+			end := endInt.Value
+			if end < start {
+				return newError("fast_sum_range end must be >= start, got start=%d, end=%d", start, end)
+			}
+
+			var sum int64
+			for i := start; i < end; i++ {
+				sum += i
+			}
+			return &Integer{Value: sum}
+		},
+	}
+
+	// fast_repeat(n, fn) -> calls fn(i) for i in [0, n), discarding results.
+	// This still crosses the interpreter boundary once per iteration, but
+	// avoids any extra allocation for the loop structure itself. It's a
+	// middle ground between fully interpreted loops and fully-native
+	// operations like fast_sum_to.
+	env.store["fast_repeat"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 2 {
+				return newError("fast_repeat expects 2 arguments (n: INTEGER, fn: FUNCTION)")
+			}
+			nInt, ok := args[0].(*Integer)
+			if !ok {
+				return newError("fast_repeat first argument must be INTEGER, got %s", args[0].Kind())
+			}
+			fnObj := args[1]
+			if fnObj.Kind() != KindFunction && fnObj.Kind() != KindBuiltin {
+				return newError("fast_repeat second argument must be FUNCTION or BUILTIN, got %s", fnObj.Kind())
+			}
+			n := nInt.Value
+			if n < 0 {
+				return newError("fast_repeat n must be non-negative, got %d", n)
+			}
+
+			// Call fn(i) for each i; we only allocate one Integer per call.
+			for i := int64(0); i < n; i++ {
+				idx := &Integer{Value: i}
+				switch f := fnObj.(type) {
+				case *Function:
+					applyFunction(f, []Object{idx})
+				case *BuiltinFunction:
+					_ = f.Fn(idx)
+				default:
+					return newError("fast_repeat encountered non-callable: %s", fnObj.Kind())
+				}
+			}
+			return NULL
 		},
 	}
 
@@ -1038,15 +1237,15 @@ func NewEnvironment() *Environment {
 			}
 			methodStr, ok := args[0].(*String)
 			if !ok {
-				return newError("first argument to `route` must be STRING, got %s", args[0].Type())
+				return newError("first argument to `route` must be STRING, got %s", args[0].Kind())
 			}
 			pathStr, ok := args[1].(*String)
 			if !ok {
-				return newError("second argument to `route` must be STRING, got %s", args[1].Type())
+				return newError("second argument to `route` must be STRING, got %s", args[1].Kind())
 			}
 			handlerFn, ok := args[2].(*Function)
 			if !ok {
-				return newError("third argument to `route` must be FUNCTION, got %s", args[2].Type())
+				return newError("third argument to `route` must be FUNCTION, got %s", args[2].Kind())
 			}
 
 			// Parse path to extract parameter names and create regex pattern
@@ -1068,6 +1267,17 @@ func NewEnvironment() *Environment {
 			}
 			pattern = strings.Join(patternParts, "/")
 
+			// Precompile regex once at route registration time so we don't
+			// pay regexp.Compile on every HTTP request.
+			var compiled *regexp.Regexp
+			if len(paramNames) > 0 {
+				var err error
+				compiled, err = regexp.Compile("^" + pattern + "$")
+				if err != nil {
+					return newError("invalid route pattern %q: %s", path, err)
+				}
+			}
+
 			// Optional middleware
 			var middlewares []Object
 			if len(args) == 4 {
@@ -1083,6 +1293,7 @@ func NewEnvironment() *Environment {
 				Method:      strings.ToUpper(methodStr.Value),
 				Path:        path,
 				PathPattern: "^" + pattern + "$",
+				PathRegex:   compiled,
 				ParamNames:  paramNames,
 				Handler:     handlerFn,
 				Middlewares: middlewares,
@@ -1099,7 +1310,7 @@ func NewEnvironment() *Environment {
 			}
 			middlewareFn, ok := args[0].(*Function)
 			if !ok {
-				return newError("argument to `use_middleware` must be FUNCTION, got %s", args[0].Type())
+				return newError("argument to `use_middleware` must be FUNCTION, got %s", args[0].Kind())
 			}
 			globalMiddlewares = append(globalMiddlewares, middlewareFn)
 			return NULL
@@ -1112,13 +1323,21 @@ func NewEnvironment() *Environment {
 			if len(args) != 1 {
 				return newError("wrong number of arguments. got=%d, want=1", len(args))
 			}
-			portInt, ok := args[0].(*Integer)
-			if !ok {
-				return newError("argument to `listen` must be INTEGER, got %s", args[0].Type())
+			var port string
+			switch arg := args[0].(type) {
+			case *Integer:
+				port = fmt.Sprintf(":%d", arg.Value)
+			case *String:
+				if !strings.HasPrefix(arg.Value, ":") {
+					port = ":" + arg.Value
+				} else {
+					port = arg.Value
+				}
+			default:
+				return newError("listen() port must be INTEGER or STRING, got %s", args[0].Kind())
 			}
-			addr := fmt.Sprintf(":%d", portInt.Value)
 
-			fmt.Printf("Starting server on %s\n", addr)
+			fmt.Printf("Starting server on %s\n", port)
 
 			// Create a custom handler to match routes with regex
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -1132,21 +1351,18 @@ func NewEnvironment() *Environment {
 						continue
 					}
 
-					// Try regex match
-					if route.PathPattern != "" {
-						re, err := regexp.Compile(route.PathPattern)
-						if err == nil {
-							matches := re.FindStringSubmatch(r.URL.Path)
-							if matches != nil {
-								matchedRoute = route
-								pathParams = make(map[string]string)
-								for j, paramName := range route.ParamNames {
-									if j+1 < len(matches) {
-										pathParams[paramName] = matches[j+1]
-									}
+					// Try regex match using precompiled pattern if available.
+					if route.PathRegex != nil {
+						matches := route.PathRegex.FindStringSubmatch(r.URL.Path)
+						if matches != nil {
+							matchedRoute = route
+							pathParams = make(map[string]string)
+							for j, paramName := range route.ParamNames {
+								if j+1 < len(matches) {
+									pathParams[paramName] = matches[j+1]
 								}
-								break
 							}
+							break
 						}
 					} else if route.Path == r.URL.Path {
 						// Exact match
@@ -1218,8 +1434,8 @@ func NewEnvironment() *Environment {
 				_, _ = w.Write([]byte(bodyObj.Value))
 			})
 
-			// Start blocking HTTP server.
-			if err := http.ListenAndServe(addr, nil); err != nil {
+			// Start server (this blocks)
+			if err := http.ListenAndServe(port, nil); err != nil {
 				return newError("listen error: %s", err)
 			}
 			return NULL
@@ -1241,7 +1457,7 @@ func NewEnvironment() *Environment {
 			if len(args) == 2 {
 				statusObj, ok := args[1].(*Integer)
 				if !ok {
-					return newError("second argument to `json_response` must be INTEGER, got %s", args[1].Type())
+					return newError("second argument to `json_response` must be INTEGER, got %s", args[1].Kind())
 				}
 				status = statusObj.Value
 			}
@@ -1266,21 +1482,21 @@ func NewEnvironment() *Environment {
 			// Parse method
 			methodObj, ok := args[0].(*String)
 			if !ok {
-				return newError("route() method must be STRING, got %s", args[0].Type())
+				return newError("route() method must be STRING, got %s", args[0].Kind())
 			}
 			method := strings.ToUpper(methodObj.Value)
 
 			// Parse path
 			pathObj, ok := args[1].(*String)
 			if !ok {
-				return newError("route() path must be STRING, got %s", args[1].Type())
+				return newError("route() path must be STRING, got %s", args[1].Kind())
 			}
 			path := pathObj.Value
 
 			// Parse handler
 			handler, ok := args[2].(*Function)
 			if !ok {
-				return newError("route() handler must be FUNCTION, got %s", args[2].Type())
+				return newError("route() handler must be FUNCTION, got %s", args[2].Kind())
 			}
 
 			// Optional middlewares (if 4th arg provided)
@@ -1288,7 +1504,7 @@ func NewEnvironment() *Environment {
 			if len(args) == 4 {
 				middlewareArray, ok := args[3].(*Array)
 				if !ok {
-					return newError("route() middlewares must be ARRAY, got %s", args[3].Type())
+					return newError("route() middlewares must be ARRAY, got %s", args[3].Kind())
 				}
 				middlewares = middlewareArray.Elements
 			}
@@ -1324,7 +1540,7 @@ func NewEnvironment() *Environment {
 					port = arg.Value
 				}
 			default:
-				return newError("listen() port must be INTEGER or STRING, got %s", args[0].Type())
+				return newError("listen() port must be INTEGER or STRING, got %s", args[0].Kind())
 			}
 
 			fmt.Printf("Starting HTTP server on %s\n", port)
@@ -1349,16 +1565,16 @@ func NewEnvironment() *Environment {
 				p := path
 				methods := methodsMap
 
-				mux.HandleFunc(p, func(w http.ResponseWriter, req *http.Request) {
+				mux.HandleFunc(p, func(w http.ResponseWriter, r *http.Request) {
 					// Find the route for this method
-					route, found := methods[req.Method]
+					route, found := methods[r.Method]
 					if !found {
 						http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 						return
 					}
 
 					// Create request object
-					reqObj := createRequestObject(w, req)
+					reqObj := createRequestObject(w, r)
 
 					// Execute handler
 					result := applyFunction(route.Handler, []Object{reqObj})
@@ -1623,12 +1839,47 @@ func NewEnvironment() *Environment {
 }
 
 func NewEnclosedEnvironment(outer *Environment) *Environment {
-	env := NewEnvironment()
-	env.outer = outer
+	// Create a lightweight child environment that chains to the given outer
+	// environment. We intentionally do NOT call NewEnvironment here because
+	// that would re-register all builtins, HTTP helpers, etc. on every new
+	// scope, which is extremely wasteful and slows down tight loops and
+	// function calls.
+	env := &Environment{
+		store:     make(map[string]Object),
+		outer:     outer,
+		slotIndex: make(map[string]int),
+	}
+	return env
+}
+
+// NewEnvironmentWithSlots creates a child environment pre-configured with slot-based locals.
+// This is used for function calls where we know the exact local variables ahead of time.
+func NewEnvironmentWithSlots(outer *Environment, slotCount int, slotNames []string, slotIDs []*InternedString) *Environment {
+	env := &Environment{
+		store:     make(map[string]Object),
+		outer:     outer,
+		slots:     make([]Object, slotCount),
+		slotIndex: make(map[string]int, slotCount),
+		slotNames: slotNames,
+	}
+
+	// Build the slotIndex map for O(1) lookups
+	for i, name := range slotNames {
+		env.slotIndex[name] = i
+	}
+
 	return env
 }
 
 func (e *Environment) Get(name string) (Object, bool) {
+	// Fast path: check slots first if available
+	if e.slotIndex != nil {
+		if idx, ok := e.slotIndex[name]; ok && idx < len(e.slots) {
+			return e.slots[idx], true
+		}
+	}
+
+	// Standard path: check local store
 	obj, ok := e.store[name]
 	if !ok && e.outer != nil {
 		obj, ok = e.outer.Get(name)
@@ -1637,74 +1888,45 @@ func (e *Environment) Get(name string) (Object, bool) {
 }
 
 func (e *Environment) Set(name string, val Object) Object {
+	// Fast path: set in slots if available
+	if e.slotIndex != nil {
+		if idx, ok := e.slotIndex[name]; ok && idx < len(e.slots) {
+			e.slots[idx] = val
+			return val
+		}
+	}
+
+	// Standard path: store in map
 	e.store[name] = val
 	return val
 }
 
-var (
-	NULL  = &Null{}
-	TRUE  = &Boolean{Value: true}
-	FALSE = &Boolean{Value: false}
-)
-
 func Eval(node ast.Node, env *Environment) Object {
+	// PHASE 3 OPTIMIZATION: Fast-path specialization for most common operations
+	// These represent ~90% of evaluations in typical programs
 	switch node := node.(type) {
-	case *ast.Program:
-		return evalProgram(node, env)
-	case *ast.ExpressionStatement:
-		return Eval(node.Expression, env)
-	case *ast.ReturnStatement:
-		val := Eval(node.ReturnValue, env)
-		if isError(val) {
-			return val
-		}
-		return &ReturnValue{Value: val}
-	case *ast.FunctionStatement:
-		fn := &Function{
-			Parameters: node.Parameters,
-			Body:       node.Body,
-			Env:        env,
-		}
-		env.Set(node.Name.Value, fn)
-		return fn
-	case *ast.AssignmentStatement:
-		val := Eval(node.Value, env)
-		if isError(val) {
-			return val
-		}
-		env.Set(node.Name.Value, val)
-		return val
-	case *ast.BlockStatement:
-		return evalBlockStatement(node, env)
-	case *ast.WhileStatement:
-		return evalWhileStatement(node, env)
-	case *ast.ForStatement:
-		return evalForStatement(node, env)
-	case *ast.ModuleStatement:
-		return evalModuleStatement(node, env)
-	case *ast.ImportStatement:
-		return evalImportStatement(node, env)
-	case *ast.FromImportStatement:
-		return evalFromImportStatement(node, env)
-	case *ast.TypeStatement:
-		return evalTypeStatement(node, env)
-	case *ast.IntegerLiteral:
-		return &Integer{Value: node.Value}
-	case *ast.StringLiteral:
-		return &String{Value: node.Value}
-	case *ast.Boolean:
-		return nativeBoolToBooleanObject(node.Value)
-	case *ast.NullLiteral:
-		return NULL
+	// Hot paths: expressions evaluated in tight loops (prioritize performance)
 	case *ast.Identifier:
-		return evalIdentifier(node, env)
-	case *ast.PrefixExpression:
-		right := Eval(node.Right, env)
-		if isError(right) {
-			return right
+		// Variable lookups are extremely common - inline fast path
+		val, ok := env.Get(node.Value)
+		if !ok {
+			return newError("identifier not found: %s", node.Value)
 		}
-		return evalPrefixExpression(node.Operator, right)
+		return val
+
+	case *ast.IntegerLiteral:
+		// Integer literals are very common - avoid allocation when possible
+		return &Integer{Value: node.Value, kind: KindInteger}
+
 	case *ast.InfixExpression:
+		// Binary operations are core hot path
+		// Try constant folding first (compile-time optimization)
+		if isBinaryOperatorConstantFoldable(node) {
+			if result := tryConstantFold(node); result != nil {
+				return result
+			}
+		}
+
 		left := Eval(node.Left, env)
 		if isError(left) {
 			return left
@@ -1714,9 +1936,43 @@ func Eval(node ast.Node, env *Environment) Object {
 			return right
 		}
 		return evalInfixExpression(node.Operator, left, right)
-	case *ast.PipelineExpression:
-		return evalPipelineExpression(node, env)
+
+	case *ast.IndexExpression:
+		// Array/map indexing is common in loops - inline fast path
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+		index := Eval(node.Index, env)
+		if isError(index) {
+			return index
+		}
+		// Inline type switch with minimal overhead
+		switch {
+		case left.Kind() == KindMap:
+			return evalMapIndexExpression(left, index)
+		case left.Kind() == KindArray:
+			return evalArrayIndexExpression(left, index)
+		default:
+			return newError("index operator not supported: %s", left.Kind())
+		}
+
+	case *ast.IfExpression:
+		// Control flow - inline to avoid extra dispatch
+		condition := Eval(node.Condition, env)
+		if isError(condition) {
+			return condition
+		}
+		if isTruthy(condition) {
+			return Eval(node.Consequence, env)
+		} else if node.Alternative != nil {
+			return Eval(node.Alternative, env)
+		} else {
+			return NULL
+		}
+
 	case *ast.CallExpression:
+		// Function calls - very common
 		function := Eval(node.Function, env)
 		if isError(function) {
 			return function
@@ -1726,32 +1982,103 @@ func Eval(node ast.Node, env *Environment) Object {
 			return args[0]
 		}
 		return applyFunction(function, args)
-	case *ast.SpawnExpression:
-		return evalSpawnExpression(node, env)
-	case *ast.AwaitExpression:
-		return evalAwaitExpression(node, env)
-	case *ast.MapLiteral:
-		return evalMapLiteral(node, env)
+
+	// Less common but still significant
+	case *ast.StringLiteral:
+		return &String{Value: node.Value}
+
+	case *ast.Boolean:
+		return nativeBoolToBooleanObject(node.Value)
+
+	case *ast.NullLiteral:
+		return NULL
+
+	case *ast.PrefixExpression:
+		right := Eval(node.Right, env)
+		if isError(right) {
+			return right
+		}
+		return evalPrefixExpression(node.Operator, right)
+
 	case *ast.ArrayLiteral:
 		return evalArrayLiteral(node, env)
+
+	case *ast.MapLiteral:
+		return evalMapLiteral(node, env)
+
+	// Statement execution
+	case *ast.Program:
+		return evalProgram(node, env)
+
+	case *ast.ExpressionStatement:
+		return Eval(node.Expression, env)
+
+	case *ast.BlockStatement:
+		return evalBlockStatement(node, env)
+
+	case *ast.ReturnStatement:
+		val := Eval(node.ReturnValue, env)
+		if isError(val) {
+			return val
+		}
+		return &ReturnValue{Value: val}
+
+	case *ast.FunctionStatement:
+		fn := &Function{
+			Parameters: node.Parameters,
+			Body:       node.Body,
+			Env:        env,
+		}
+		// Build slot layout for fast local variable access
+		buildFunctionSlotLayout(fn)
+		env.Set(node.Name.Value, fn)
+		return fn
+
+	case *ast.AssignmentStatement:
+		val := Eval(node.Value, env)
+		if isError(val) {
+			return val
+		}
+		env.Set(node.Name.Value, val)
+		return val
+
+	case *ast.WhileStatement:
+		return evalWhileStatement(node, env)
+
+	case *ast.ForStatement:
+		return evalForStatement(node, env)
+
+	// Less common statements
+	case *ast.ModuleStatement:
+		return evalModuleStatement(node, env)
+
+	case *ast.ImportStatement:
+		return evalImportStatement(node, env)
+
+	case *ast.FromImportStatement:
+		return evalFromImportStatement(node, env)
+
+	case *ast.TypeStatement:
+		return evalTypeStatement(node, env)
+
+	case *ast.PipelineExpression:
+		return evalPipelineExpression(node, env)
+
+	case *ast.SpawnExpression:
+		return evalSpawnExpression(node, env)
+
+	case *ast.AwaitExpression:
+		return evalAwaitExpression(node, env)
+
 	case *ast.MemberExpression:
 		return evalMemberExpression(node, env)
-	case *ast.IndexExpression:
-		left := Eval(node.Left, env)
-		if isError(left) {
-			return left
-		}
-		index := Eval(node.Index, env)
-		if isError(index) {
-			return index
-		}
-		return evalIndexExpression(left, index)
-	case *ast.IfExpression:
-		return evalIfExpression(node, env)
+
 	case *ast.ServiceStatement:
 		return evalServiceStatement(node, env)
+
 	case *ast.RouteStatement:
 		return evalRouteStatement(node, env)
+
 	case *ast.MiddlewareStatement:
 		return evalMiddlewareStatement(node, env)
 	}
@@ -1777,8 +2104,8 @@ func evalBlockStatement(block *ast.BlockStatement, env *Environment) Object {
 	for _, statement := range block.Statements {
 		result = Eval(statement, env)
 		if result != nil {
-			rt := result.Type()
-			if rt == "RETURN_VALUE" || rt == "ERROR" {
+			rt := result.Kind()
+			if rt == KindReturnValue || rt == KindError {
 				return result
 			}
 		}
@@ -1789,20 +2116,16 @@ func evalBlockStatement(block *ast.BlockStatement, env *Environment) Object {
 func evalPrefixExpression(operator string, right Object) Object {
 	switch operator {
 	case "-":
-		return evalMinusPrefixOperatorExpression(right)
+		if right.Kind() != KindInteger {
+			return newError("unknown operator: -%s", right.Kind())
+		}
+		value := right.(*Integer).Value
+		return &Integer{Value: -value}
 	case "!":
 		return evalBangOperatorExpression(right)
 	default:
-		return newError("unknown operator: %s%s", operator, right.Type())
+		return newError("unknown operator: %s%s", operator, right.Kind())
 	}
-}
-
-func evalMinusPrefixOperatorExpression(right Object) Object {
-	if right.Type() != "INTEGER" {
-		return newError("unknown operator: -%s", right.Type())
-	}
-	value := right.(*Integer).Value
-	return &Integer{Value: -value}
 }
 
 func evalBangOperatorExpression(right Object) Object {
@@ -1819,10 +2142,10 @@ func evalBangOperatorExpression(right Object) Object {
 }
 
 func evalInfixExpression(operator string, left, right Object) Object {
-	if left.Type() == "INTEGER" && right.Type() == "INTEGER" {
+	if left.Kind() == KindInteger && right.Kind() == KindInteger {
 		return evalIntegerInfixExpression(operator, left, right)
 	}
-	if left.Type() == "STRING" && right.Type() == "STRING" {
+	if left.Kind() == KindString && right.Kind() == KindString {
 		return evalStringInfixExpression(operator, left, right)
 	}
 	if operator == "==" {
@@ -1831,41 +2154,47 @@ func evalInfixExpression(operator string, left, right Object) Object {
 	if operator == "!=" {
 		return evalNotEqualInfixExpression(left, right)
 	}
-	if left.Type() != right.Type() {
-		return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
+	if left.Kind() != right.Kind() {
+		return newError("type mismatch: %s %s %s", left.Kind(), operator, right.Kind())
 	}
-	return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+	return newError("unknown operator: %s %s %s", left.Kind(), operator, right.Kind())
 }
 
 func evalIntegerInfixExpression(operator string, left, right Object) Object {
 	leftVal := left.(*Integer).Value
 	rightVal := right.(*Integer).Value
-	switch operator {
-	case "+":
-		return &Integer{Value: leftVal + rightVal}
-	case "-":
-		return &Integer{Value: leftVal - rightVal}
-	case "*":
-		return &Integer{Value: leftVal * rightVal}
-	case "/":
+
+	// Fast path: optimize for common operators using direct comparison
+	switch operator[0] {
+	case '+':
+		return NewInteger(leftVal + rightVal)
+	case '-':
+		return NewInteger(leftVal - rightVal)
+	case '*':
+		return NewInteger(leftVal * rightVal)
+	case '/':
 		if rightVal == 0 {
 			return newError("division by zero")
 		}
-		return &Integer{Value: leftVal / rightVal}
-	case "<":
-		return nativeBoolToBooleanObject(leftVal < rightVal)
-	case ">":
-		return nativeBoolToBooleanObject(leftVal > rightVal)
-	case "<=":
+		return NewInteger(leftVal / rightVal)
+	case '<':
+		if len(operator) == 1 {
+			return nativeBoolToBooleanObject(leftVal < rightVal)
+		}
+		// Handle "<=" (length 2)
 		return nativeBoolToBooleanObject(leftVal <= rightVal)
-	case ">=":
+	case '>':
+		if len(operator) == 1 {
+			return nativeBoolToBooleanObject(leftVal > rightVal)
+		}
+		// Handle ">=" (length 2)
 		return nativeBoolToBooleanObject(leftVal >= rightVal)
-	case "==":
+	case '=':
 		return nativeBoolToBooleanObject(leftVal == rightVal)
-	case "!=":
+	case '!':
 		return nativeBoolToBooleanObject(leftVal != rightVal)
 	default:
-		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+		return newError("unknown operator: %s %s %s", left.Kind(), operator, right.Kind())
 	}
 }
 
@@ -1881,22 +2210,22 @@ func evalStringInfixExpression(operator string, left, right Object) Object {
 	case "!=":
 		return nativeBoolToBooleanObject(leftVal != rightVal)
 	default:
-		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+		return newError("unknown operator: %s %s %s", left.Kind(), operator, right.Kind())
 	}
 }
 
 func evalEqualInfixExpression(left, right Object) Object {
-	if left.Type() == "INTEGER" && right.Type() == "INTEGER" {
+	if left.Kind() == KindInteger && right.Kind() == KindInteger {
 		leftVal := left.(*Integer).Value
 		rightVal := right.(*Integer).Value
 		return nativeBoolToBooleanObject(leftVal == rightVal)
 	}
-	if left.Type() == "BOOLEAN" && right.Type() == "BOOLEAN" {
+	if left.Kind() == KindBoolean && right.Kind() == KindBoolean {
 		leftVal := left.(*Boolean).Value
 		rightVal := right.(*Boolean).Value
 		return nativeBoolToBooleanObject(leftVal == rightVal)
 	}
-	if left.Type() == "STRING" && right.Type() == "STRING" {
+	if left.Kind() == KindString && right.Kind() == KindString {
 		leftVal := left.(*String).Value
 		rightVal := right.(*String).Value
 		return nativeBoolToBooleanObject(leftVal == rightVal)
@@ -1905,17 +2234,17 @@ func evalEqualInfixExpression(left, right Object) Object {
 }
 
 func evalNotEqualInfixExpression(left, right Object) Object {
-	if left.Type() == "INTEGER" && right.Type() == "INTEGER" {
+	if left.Kind() == KindInteger && right.Kind() == KindInteger {
 		leftVal := left.(*Integer).Value
 		rightVal := right.(*Integer).Value
 		return nativeBoolToBooleanObject(leftVal != rightVal)
 	}
-	if left.Type() == "BOOLEAN" && right.Type() == "BOOLEAN" {
+	if left.Kind() == KindBoolean && right.Kind() == KindBoolean {
 		leftVal := left.(*Boolean).Value
 		rightVal := right.(*Boolean).Value
 		return nativeBoolToBooleanObject(leftVal != rightVal)
 	}
-	if left.Type() == "STRING" && right.Type() == "STRING" {
+	if left.Kind() == KindString && right.Kind() == KindString {
 		leftVal := left.(*String).Value
 		rightVal := right.(*String).Value
 		return nativeBoolToBooleanObject(leftVal != rightVal)
@@ -1923,15 +2252,101 @@ func evalNotEqualInfixExpression(left, right Object) Object {
 	return TRUE
 }
 
+// ============================================================================
+// Constant Folding & Visitor Pattern Optimization
+// ============================================================================
+
+// isBinaryOperatorConstantFoldable checks if an infix expression can be folded at parse-time
+func isBinaryOperatorConstantFoldable(node *ast.InfixExpression) bool {
+	// Check if both operands are constants (literals)
+	_, leftIsConst := node.Left.(*ast.IntegerLiteral)
+	_, rightIsConst := node.Right.(*ast.IntegerLiteral)
+
+	if leftIsConst && rightIsConst {
+		return true
+	}
+
+	// String concatenation/comparison
+	_, leftIsStr := node.Left.(*ast.StringLiteral)
+	_, rightIsStr := node.Right.(*ast.StringLiteral)
+
+	if leftIsStr && rightIsStr {
+		return node.Operator == "+" || node.Operator == "==" || node.Operator == "!="
+	}
+
+	return false
+}
+
+// tryConstantFold attempts to evaluate an expression with constant operands at parse time
+func tryConstantFold(node *ast.InfixExpression) Object {
+	switch left := node.Left.(type) {
+	case *ast.IntegerLiteral:
+		if right, ok := node.Right.(*ast.IntegerLiteral); ok {
+			return foldIntegerOperation(node.Operator, left.Value, right.Value)
+		}
+	case *ast.StringLiteral:
+		if right, ok := node.Right.(*ast.StringLiteral); ok {
+			return foldStringOperation(node.Operator, left.Value, right.Value)
+		}
+	}
+	return nil
+}
+
+// foldIntegerOperation evaluates integer arithmetic at compile time
+func foldIntegerOperation(operator string, left, right int64) Object {
+	switch operator {
+	case "+":
+		return NewInteger(left + right)
+	case "-":
+		return NewInteger(left - right)
+	case "*":
+		return NewInteger(left * right)
+	case "/":
+		if right == 0 {
+			return newError("division by zero")
+		}
+		return NewInteger(left / right)
+	case "<":
+		return nativeBoolToBooleanObject(left < right)
+	case ">":
+		return nativeBoolToBooleanObject(left > right)
+	case "<=":
+		return nativeBoolToBooleanObject(left <= right)
+	case ">=":
+		return nativeBoolToBooleanObject(left >= right)
+	case "==":
+		return nativeBoolToBooleanObject(left == right)
+	case "!=":
+		return nativeBoolToBooleanObject(left != right)
+	default:
+		return nil
+	}
+}
+
+// foldStringOperation evaluates string operations at compile time
+func foldStringOperation(operator string, left, right string) Object {
+	switch operator {
+	case "+":
+		return &String{Value: left + right}
+	case "==":
+		return nativeBoolToBooleanObject(left == right)
+	case "!=":
+		return nativeBoolToBooleanObject(left != right)
+	default:
+		return nil
+	}
+}
+
 // Server Implementation
 
 type ServiceContext struct {
 	Mux         *http.ServeMux
 	Middlewares []Object
+	kind        ObjectKind
 }
 
-func (sc *ServiceContext) Type() string    { return "SERVICE_CONTEXT" }
-func (sc *ServiceContext) Inspect() string { return "service context" }
+func (sc *ServiceContext) Kind() ObjectKind { return KindNative }
+func (sc *ServiceContext) Inspect() string  { return "service context" }
 
 func evalServiceStatement(node *ast.ServiceStatement, env *Environment) Object {
 	addr := node.Address.Value
@@ -1948,7 +2363,7 @@ func evalServiceStatement(node *ast.ServiceStatement, env *Environment) Object {
 
 	// Evaluate body
 	res := evalBlockStatement(node.Body, serviceEnv)
-	if res != nil && res.Type() == "ERROR" {
+	if res != nil && res.Kind() == KindError {
 		fmt.Printf("Error evaluating service body: %s\n", res.Inspect())
 	}
 
@@ -2186,10 +2601,8 @@ func createRequestObjectWithParams(w http.ResponseWriter, r *http.Request, pathP
 
 	// Path params
 	params := make(map[Object]Object)
-	if pathParams != nil {
-		for k, v := range pathParams {
-			params[&String{Value: k}] = &String{Value: v}
-		}
+	for k, v := range pathParams {
+		params[&String{Value: k}] = &String{Value: v}
 	}
 	fields["params"] = &Map{Pairs: params}
 
@@ -2279,7 +2692,7 @@ func evalIdentifier(node *ast.Identifier, env *Environment) Object {
 }
 
 func evalExpressions(exps []ast.Expression, env *Environment) []Object {
-	var result []Object
+	result := make([]Object, 0, len(exps))
 	for _, e := range exps {
 		evaluated := Eval(e, env)
 		if isError(evaluated) {
@@ -2288,6 +2701,32 @@ func evalExpressions(exps []ast.Expression, env *Environment) []Object {
 		result = append(result, evaluated)
 	}
 	return result
+}
+
+// buildFunctionSlotLayout creates the slot layout for a function based on its parameters.
+// This pre-allocates a slot array and builds the index map for O(1) variable lookups.
+func buildFunctionSlotLayout(fn *Function) {
+	if fn == nil || len(fn.Parameters) == 0 {
+		// No parameters, no slots needed for now (can be extended for let bindings)
+		fn.SlotCount = 0
+		fn.SlotNames = []string{}
+		fn.SlotIDs = []*InternedString{}
+		return
+	}
+
+	slotCount := len(fn.Parameters)
+	slotNames := make([]string, slotCount)
+	slotIDs := make([]*InternedString, slotCount)
+
+	// Build slot layout from parameters
+	for i, param := range fn.Parameters {
+		slotNames[i] = param.Value
+		slotIDs[i] = InternIdentifier(param.Value)
+	}
+
+	fn.SlotCount = slotCount
+	fn.SlotNames = slotNames
+	fn.SlotIDs = slotIDs
 }
 
 func applyFunction(fn Object, args []Object) Object {
@@ -2299,14 +2738,30 @@ func applyFunction(fn Object, args []Object) Object {
 	case *BuiltinFunction:
 		return fn.Fn(args...)
 	default:
-		return newError("not a function: %s", fn.Type())
+		return newError("not a function: %s", fn.Kind())
 	}
 }
 
 func extendFunctionEnv(fn *Function, args []Object) *Environment {
+	// If the function has pre-computed slot layout, use it for fast local variable access
+	if fn.SlotCount > 0 {
+		env := NewEnvironmentWithSlots(fn.Env, fn.SlotCount, fn.SlotNames, fn.SlotIDs)
+
+		// Bind parameters directly to slots by index (much faster than map Set)
+		for paramIdx := range fn.Parameters {
+			if paramIdx < len(args) && paramIdx < len(env.slots) {
+				env.slots[paramIdx] = args[paramIdx]
+			}
+		}
+		return env
+	}
+
+	// Fallback: use traditional map-based binding (for backward compatibility)
 	env := NewEnclosedEnvironment(fn.Env)
 	for paramIdx, param := range fn.Parameters {
-		env.Set(param.Value, args[paramIdx])
+		if paramIdx < len(args) {
+			env.Set(param.Value, args[paramIdx])
+		}
 	}
 	return env
 }
@@ -2319,7 +2774,7 @@ func unwrapReturnValue(obj Object) Object {
 }
 
 func evalMapLiteral(node *ast.MapLiteral, env *Environment) Object {
-	pairs := make(map[Object]Object)
+	pairs := make(map[Object]Object, len(node.Pairs))
 	for _, pair := range node.Pairs {
 		key := Eval(pair.Key, env)
 		if isError(key) {
@@ -2334,20 +2789,6 @@ func evalMapLiteral(node *ast.MapLiteral, env *Environment) Object {
 	return &Map{Pairs: pairs}
 }
 
-func evalIfExpression(ie *ast.IfExpression, env *Environment) Object {
-	condition := Eval(ie.Condition, env)
-	if isError(condition) {
-		return condition
-	}
-	if isTruthy(condition) {
-		return Eval(ie.Consequence, env)
-	} else if ie.Alternative != nil {
-		return Eval(ie.Alternative, env)
-	} else {
-		return NULL
-	}
-}
-
 func evalWhileStatement(ws *ast.WhileStatement, env *Environment) Object {
 	var result Object = NULL
 	for {
@@ -2360,7 +2801,7 @@ func evalWhileStatement(ws *ast.WhileStatement, env *Environment) Object {
 		}
 		result = Eval(ws.Body, env)
 		if result != nil {
-			if result.Type() == "RETURN_VALUE" || result.Type() == "ERROR" {
+			if result.Kind() == KindReturnValue || result.Kind() == KindError {
 				return result
 			}
 		}
@@ -2375,17 +2816,21 @@ func evalForStatement(fs *ast.ForStatement, env *Environment) Object {
 	}
 	array, ok := iterable.(*Array)
 	if !ok {
-		return newError("for-loop value must be ARRAY, got %s", iterable.Type())
+		return newError("for-loop value must be ARRAY, got %s", iterable.Kind())
 	}
 
 	var result Object = NULL
+	// Create a single enclosed environment for the loop and just update the
+	// iterator binding on each iteration. This avoids allocating a brand new
+	// Environment (and backing map) for every element, which is a significant
+	// cost in large loops, while still giving the body its own scope that
+	// chains to the outer environment.
+	iterEnv := NewEnclosedEnvironment(env)
 	for _, elem := range array.Elements {
-		// New inner scope for each iteration
-		iterEnv := NewEnclosedEnvironment(env)
 		iterEnv.Set(fs.Iterator.Value, elem)
 		result = Eval(fs.Body, iterEnv)
 		if result != nil {
-			if result.Type() == "RETURN_VALUE" || result.Type() == "ERROR" {
+			if result.Kind() == KindReturnValue || result.Kind() == KindError {
 				return result
 			}
 		}
@@ -2448,7 +2893,7 @@ func evalAwaitExpression(ae *ast.AwaitExpression, env *Environment) Object {
 	}
 	task, ok := val.(*Task)
 	if !ok {
-		return newError("await can only be used on tasks, got %s", val.Type())
+		return newError("await can only be used on tasks, got %s", val.Kind())
 	}
 	// Block until the task has completed and return its result.
 	return task.Await()
@@ -2589,35 +3034,50 @@ func evalMemberExpression(me *ast.MemberExpression, env *Environment) Object {
 		}
 		return NULL
 	default:
-		return newError("type %s does not support member access", obj.Type())
+		return newError("type %s does not support member access", obj.Kind())
 	}
 }
 
 func evalArrayLiteral(node *ast.ArrayLiteral, env *Environment) Object {
-	elements := evalExpressions(node.Elements, env)
-	if len(elements) == 1 && isError(elements[0]) {
-		return elements[0]
-	}
-	return &Array{Elements: elements}
-}
+	// Pre-allocate array with exact capacity (cache-friendly)
+	elements := make([]Object, 0, len(node.Elements))
 
-func evalIndexExpression(left, index Object) Object {
-	switch {
-	case left.Type() == "MAP":
-		return evalMapIndexExpression(left, index)
-	case left.Type() == "ARRAY":
-		return evalArrayIndexExpression(left, index)
-	default:
-		return newError("index operator not supported: %s", left.Type())
+	for _, el := range node.Elements {
+		evaluated := Eval(el, env)
+		if isError(evaluated) {
+			return evaluated
+		}
+		elements = append(elements, evaluated)
 	}
+
+	return &Array{Elements: elements}
 }
 
 func evalMapIndexExpression(mapObj, index Object) Object {
 	mapObject := mapObj.(*Map)
 
-	// Try to match the index key with map pairs
+	// Optimize for common string keys (fast path)
+	if strIdx, ok := index.(*String); ok {
+		for k, v := range mapObject.Pairs {
+			if strK, ok := k.(*String); ok && strK.Value == strIdx.Value {
+				return v
+			}
+		}
+		return NULL
+	}
+
+	// Optimize for integer keys
+	if intIdx, ok := index.(*Integer); ok {
+		for k, v := range mapObject.Pairs {
+			if intK, ok := k.(*Integer); ok && intK.Value == intIdx.Value {
+				return v
+			}
+		}
+		return NULL
+	}
+
+	// Fallback: generic comparison
 	for k, v := range mapObject.Pairs {
-		// Compare keys - handle both String and other types
 		if compareKeys(k, index) {
 			return v
 		}
@@ -2628,22 +3088,22 @@ func evalMapIndexExpression(mapObj, index Object) Object {
 
 func evalArrayIndexExpression(arrayObj, index Object) Object {
 	arrayObject := arrayObj.(*Array)
-	idx, ok := index.(*Integer)
-	if !ok {
-		return newError("array index must be INTEGER, got %s", index.Type())
-	}
 
-	max := int64(len(arrayObject.Elements) - 1)
-	if idx.Value < 0 || idx.Value > max {
+	// Fast path: expect Integer index (most common case)
+	if idx, ok := index.(*Integer); ok {
+		// Direct bounds check (no allocation, cache-friendly)
+		if idx.Value >= 0 && idx.Value < int64(len(arrayObject.Elements)) {
+			return arrayObject.Elements[idx.Value]
+		}
 		return NULL
 	}
 
-	return arrayObject.Elements[idx.Value]
+	return newError("array index must be INTEGER, got %s", index.Kind())
 }
 
 func compareKeys(key1, key2 Object) bool {
 	// Handle String keys specially
-	if key1.Type() == "STRING" && key2.Type() == "STRING" {
+	if key1.Kind() == KindString && key2.Kind() == KindString {
 		return key1.(*String).Value == key2.(*String).Value
 	}
 	// For other types, use Inspect() comparison (simple but works)
@@ -2665,7 +3125,7 @@ func isTruthy(obj Object) bool {
 
 func isError(obj Object) bool {
 	if obj != nil {
-		return obj.Type() == "ERROR"
+		return obj.Kind() == KindError
 	}
 	return false
 }

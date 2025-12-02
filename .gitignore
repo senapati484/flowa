@@ -37,3 +37,6 @@ coverage.html
 
 # previous python architecture
 legacy_prototype
+benchmark_test
+./benchmark_test
+/benchmark_test/*

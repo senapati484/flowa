@@ -7,15 +7,16 @@ Complete guide to the Flowa programming language.
 ## Table of Contents
 
 1. [Language Basics](#language-basics)
-2. [🌐 HTTP Server](#-http-server)
-3. [🔐 Authentication](#-authentication)
-4. [🎫 JWT Tokens](#-jwt-tokens) 
-5. [🔌 WebSockets](#-websockets)
-6. [📧 Email](#-email)
-7. [📊 Data Handling](#-data-handling)
-8. [⚙️ Configuration](#️-configuration)
-9. [🛡️ Middleware](#️-middleware)
-10. [Complete Examples](#complete-examples)
+2. [⚡ Performance Builtins](#️-performance-builtins)
+3. [🌐 HTTP Server](#-http-server)
+4. [🔐 Authentication](#-authentication)
+5. [🎫 JWT Tokens](#-jwt-tokens)
+6. [🔌 WebSockets](#-websockets)
+7. [📧 Email](#-email)
+8. [📊 Data Handling](#-data-handling)
+9. [⚙️ Configuration](#️-configuration)
+10. [🛡️ Middleware](#️-middleware)
+11. [Complete Examples](#complete-examples)
 
 ---
 
@@ -180,11 +181,13 @@ print(PI)
 ```
 
 **Wildcard Import:**
+
 ```python
 from "math_utils.flowa" import *
 ```
 
 **JS-Style Import:**
+
 ```python
 import { add, PI } from "math_utils.flowa"
 ```
@@ -214,6 +217,7 @@ listen(8080)
 ```
 
 **Run it:**
+
 ```bash
 flowa server.flowa
 # Starting HTTP server on :8080
@@ -227,30 +231,30 @@ The `req` parameter contains all request information:
 def handle_request(req):
     # HTTP method
     method = req.method  # "GET", "POST", etc.
-    
+
     # Request path
     path = req.path  # "/users/123"
-    
+
     # Query parameters (?key=value)
     name = req.query["name"]
     page = req.query["page"]
-    
+
     # Path parameters (:id in route)
     id = req.params["id"]
-    
+
     # Headers
     content_type = req.headers["content-type"]
     auth = req.headers["authorization"]
-    
+
     # Cookies
     session = req.cookies["session_id"]
-    
+
     # Raw body
     body_text = req.body
-    
+
     # Client IP
     ip = req.ip
-    
+
     return response.json({"status": "ok"}, 200)
 ```
 
@@ -275,6 +279,7 @@ service API on ":8080":
 ```
 
 **New Syntax:**
+
 ```python
 route("GET", "/users/:id", get_user)
 route("GET", "/posts/:post_id/comments/:comment_id", get_comment)
@@ -282,6 +287,7 @@ listen(8080)
 ```
 
 **Test:**
+
 ```bash
 curl http://localhost:8080/users/123
 # {"user_id":"123"}
@@ -319,9 +325,9 @@ def create_user(req):
     data = json.decode(req.body)
     username = data["username"]
     email = data["email"]
-    
+
     # Process...
-    
+
     return response.json({
         "message": "User created",
         "username": username
@@ -333,6 +339,7 @@ listen(8080)
 ```
 
 **Test:**
+
 ```bash
 curl -X POST http://localhost:8080/users \
   -H "Content-Type: application/json" \
@@ -358,6 +365,7 @@ users["alice"] = hash
 ```
 
 **Security Notes:**
+
 - Uses bcrypt with cost factor 10
 - Automatically salted
 - Industry-standard secure hashing
@@ -385,26 +393,26 @@ def register(req):
     data = json.decode(req.body)
     username = data["username"]
     password = data["password"]
-    
+
     # Check if user exists
     if username in users:
         return response.json({"error": "User already exists"}, 400)
-    
+
     # Hash password and store
     hash = auth.hash_password(password)
     users[username] = hash
-    
+
     return response.json({"message": "Registration successful"}, 201)
 
 def login(req):
     data = json.decode(req.body)
     username = data["username"]
     password = data["password"]
-    
+
     # Check if user exists
     if username not in users:
         return response.json({"error": "Invalid credentials"}, 401)
-    
+
     # Verify password
     hash = users[username]
     if auth.verify_password(hash, password):
@@ -418,6 +426,7 @@ service AuthAPI on ":8080":
 ```
 
 **Test Registration:**
+
 ```bash
 curl -X POST http://localhost:8080/register \
   -H "Content-Type: application/json" \
@@ -425,6 +434,7 @@ curl -X POST http://localhost:8080/register \
 ```
 
 **Test Login:**
+
 ```bash
 curl -X POST http://localhost:8080/login \
   -H "Content-Type: application/json" \
@@ -455,8 +465,9 @@ token = jwt.sign(payload, secret, expiry)
 ```
 
 **Duration formats:**
+
 - `"1h"` - 1 hour
-- `"24h"` - 24 hours  
+- `"24h"` - 24 hours
 - `"30m"` - 30 minutes
 - `"7d"` - 7 days
 
@@ -494,18 +505,18 @@ def register(req):
 def login(req):
     data = json.decode(req.body)
     username = data["username"]
-    
+
     # Verify password
     if username not in users:
         return response.json({"error": "Invalid credentials"}, 401)
-    
+
     if not auth.verify_password(users[username], data["password"]):
         return response.json({"error": "Invalid credentials"}, 401)
-    
+
     # Generate JWT token
     payload = {"username": username, "role": "user"}
     token = jwt.sign(payload, "my-secret-key", "24h")
-    
+
     return response.json({
         "message": "Login successful",
         "token": token
@@ -522,19 +533,19 @@ service AuthAPI on ":8080":
 def get_profile(req):
     # Extract token from Authorization header
     auth_header = req.headers["authorization"]
-    
+
     if auth_header == None:
         return response.json({"error": "No token provided"}, 401)
-    
+
     # In production: extract "Bearer <token>"
     token = auth_header
-    
+
     # Verify token
     claims = jwt.verify(token, "my-secret-key")
-    
+
     if claims == None:
         return response.json({"error": "Invalid token"}, 401)
-    
+
     # Token is valid - return user data
     return response.json({
         "username": claims["username"],
@@ -547,6 +558,7 @@ service API on ":8080":
 ```
 
 **Test Protected Route:**
+
 ```bash
 # Login to get token
 TOKEN=$(curl -X POST http://localhost:8080/login \
@@ -571,25 +583,25 @@ Real-time bidirectional communication.
 def ws_handler(req):
     # Upgrade HTTP connection to WebSocket
     conn = websocket.upgrade(req)
-    
+
     if conn == None:
         return response.text("WebSocket upgrade failed", 500)
-    
+
     # Send welcome message
     websocket.send(conn, "Connected to Flowa WebSocket!")
-    
+
     # Read-echo loop
     while True:
         msg = websocket.read(conn)
-        
+
         if msg == None:
             # Client disconnected
             print("Client disconnected")
             break
-        
+
         print("Received:", msg)
         websocket.send(conn, "Echo: " + msg)
-    
+
     # Clean up
     websocket.close(conn)
     return None  # Response handled by WebSocket
@@ -601,13 +613,16 @@ service ChatServer on ":8080":
 ### WebSocket API
 
 **`websocket.upgrade(req)`** - Upgrade HTTP to WebSocket
+
 - Returns: Connection object or `None`
 
 **`websocket.send(conn, message)`** - Send text message
+
 - `conn`: WebSocket connection
 - `message`: String to send
 
 **`websocket.read(conn)`** - Read next message (blocking)
+
 - Returns: String message or `None` (disconnected)
 
 **`websocket.close(conn)`** - Close connection
@@ -622,22 +637,22 @@ def chat_handler(req):
     conn = websocket.upgrade(req)
     if conn == None:
         return response.text("Failed", 500)
-    
+
     # Add to connections list
     connections = connections + [conn]
-    
+
     websocket.send(conn, "Welcome to chat!")
-    
+
     while True:
         msg = websocket.read(conn)
         if msg == None:
             break
-        
+
         # Broadcast to all connections
         broadcast_message = "User: " + msg
         for other_conn in connections:
             websocket.send(other_conn, broadcast_message)
-    
+
     websocket.close(conn)
     return None
 
@@ -649,19 +664,19 @@ service ChatServer on ":8080":
 
 ```html
 <script>
-  const ws = new WebSocket('ws://localhost:8080/ws');
-  
+  const ws = new WebSocket("ws://localhost:8080/ws");
+
   ws.onopen = () => {
-    console.log('Connected');
-    ws.send('Hello Server!');
+    console.log("Connected");
+    ws.send("Hello Server!");
   };
-  
+
   ws.onmessage = (event) => {
-    console.log('Received:', event.data);
+    console.log("Received:", event.data);
   };
-  
+
   ws.onclose = () => {
-    console.log('Disconnected');
+    console.log("Disconnected");
   };
 </script>
 ```
@@ -697,6 +712,7 @@ mail.send({
 ```
 
 **Fields:**
+
 - `to` (required): Recipient email
 - `from` (optional): Sender email (defaults to SMTP_USER)
 - `subject` (required): Email subject
@@ -738,11 +754,11 @@ def send_welcome_email(username, email):
     # Get SMTP credentials from environment
     smtp_host = config.env("SMTP_HOST", "")
     smtp_user = config.env("SMTP_USER", "")
-    
+
     if smtp_host == "":
         print("Warning: SMTP not configured")
         return
-    
+
     template = """
 Hello {{username}},
 
@@ -753,7 +769,7 @@ Your account has been successfully created.
 Best regards,
 The Team
     """
-    
+
     mail_data = {"to": email, "from": smtp_user, "subject": "Welcome to Our Platform", "username": username}
     mail.send_template(template, mail_data)
 
@@ -762,14 +778,14 @@ def register(req):
     username = data["username"]
     email = data["email"]
     password = data["password"]
-    
+
     # Create user
     hash = auth.hash_password(password)
     users[username] = {"hash": hash, "email": email}
-    
+
     # Send welcome email
     send_welcome_email(username, email)
-    
+
     return response.json({"message": "Registration successful"}, 201)
 ```
 
@@ -790,6 +806,7 @@ return response.json({"status": "sent"}, 200)
 ```
 
 **Use `mail.queue()` for:**
+
 - Welcome emails
 - Notifications
 - Reports
@@ -950,12 +967,13 @@ logger = middleware.logger()
 
 service API on ":8080":
     use logger  # Apply to all routes
-    
+
     get "/" -> home
     get "/users" -> users
 ```
 
 **Output:**
+
 ```
 [LOG] GET /
 [LOG] GET /users
@@ -973,6 +991,7 @@ service API on ":8080":
 ```
 
 **Headers added:**
+
 - `Access-Control-Allow-Origin: *`
 - `Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS`
 - `Access-Control-Allow-Headers: Content-Type, Authorization`
@@ -985,7 +1004,7 @@ cors = middleware.cors()
 
 service API on ":8080":
     use logger  # Global
-    
+
     get "/public" -> public_handler
     get "/api/data" -> api_handler, [cors]  # Additional middleware
 ```
@@ -1004,47 +1023,47 @@ def register(req):
     username = data["username"]
     email = data["email"]
     password = data["password"]
-    
+
     if username in users:
         return response.json({"error": "User exists"}, 400)
-    
+
     hash = auth.hash_password(password)
     users[username] = {"hash": hash, "email": email}
-    
+
     # Send welcome email
     mail.send_template("Welcome {{name}}!", {
         "to": email,
         "subject": "Welcome",
         "name": username
     })
-    
+
     return response.json({"message": "Registered"}, 201)
 
 def login(req):
     data = json.decode(req.body)
     username = data["username"]
     password = data["password"]
-    
+
     if username not in users:
         return response.json({"error": "Invalid"}, 401)
-    
+
     if not auth.verify_password(users[username]["hash"], password):
         return response.json({"error": "Invalid"}, 401)
-    
+
     token = jwt.sign({"username": username}, "secret", "24h")
-    
+
     return response.json({"token": token}, 200)
 
 def get_profile(req):
     token = req.headers["authorization"]
     claims = jwt.verify(token, "secret")
-    
+
     if claims == None:
         return response.json({"error": "Unauthorized"}, 401)
-    
+
     username = claims["username"]
     user_data = users[username]
-    
+
     return response.json({
         "username": username,
         "email": user_data["email"]
@@ -1063,26 +1082,26 @@ def chat_handler(req):
     # Verify JWT before upgrading
     token = req.query["token"]
     claims = jwt.verify(token, "secret")
-    
+
     if claims == None:
         return response.json({"error": "Unauthorized"}, 401)
-    
+
     username = claims["username"]
-    
+
     conn = websocket.upgrade(req)
     if conn == None:
         return response.text("Failed", 500)
-    
+
     websocket.send(conn, "Welcome, " + username + "!")
-    
+
     while True:
         msg = websocket.read(conn)
         if msg == None:
             break
-        
+
         # Broadcast with username
         websocket.send(conn, username + ": " + msg)
-    
+
     websocket.close(conn)
     return None
 
@@ -1095,3 +1114,135 @@ service ChatApp on ":8080":
 For more examples, see the [examples/](examples/) directory.
 
 **→ [API Reference](API.md)** for detailed function documentation.
+
+---
+
+## ⚡ Performance Builtins
+
+Flowa is an interpreted language, but for **numeric heavy workloads** you can call
+special **performance-builtins** that are implemented directly in Go. These avoid
+most per-iteration overhead and are much closer to raw Go performance.
+
+### `fast_sum_to(n)`
+
+Efficiently compute the sum \(0 + 1 + \dots + (n-1)\) in native Go code.
+
+```python
+n = 10000000
+total = fast_sum_to(n)
+print(total)  # 49999995000000
+```
+
+- **Arguments**:
+  - `n` (INTEGER, non‑negative) – number of iterations
+- **Returns**:
+  - INTEGER sum
+- **Use when**: you would otherwise write:
+
+```python
+sum = 0
+i = 0
+while i < n:
+    sum = sum + i
+    i = i + 1
+```
+
+For benchmarks like the intensive loop in `examples/benchmark_test`, prefer:
+
+```python
+print("Starting intensive benchmark...")
+
+run = 0
+while run < 5:
+    sum = fast_sum_to(10000000)
+
+    print("Run:")
+    print(run + 1)
+    print("Sum:")
+    print(sum)
+
+    run = run + 1
+
+print("Benchmark complete!")
+```
+
+### `fast_sum_range(start, end)`
+
+Efficiently compute the sum \(start + (start+1) + \dots + (end-1)\).
+
+```python
+total = fast_sum_range(10, 20)  # 10+...+19
+print(total)
+```
+
+- **Arguments**:
+  - `start` (INTEGER)
+  - `end` (INTEGER, must be `>= start`)
+- **Returns**: INTEGER sum
+
+### `fast_repeat(n, fn)`
+
+Call a function or builtin `fn(i)` **n times**, with a native loop managing
+the counter.
+
+```python
+def work(i):
+    # lightweight, side-effecting work
+    print(i)
+
+fast_repeat(1000000, work)
+```
+
+- **Arguments**:
+  - `n` (INTEGER, non‑negative)
+  - `fn` (FUNCTION or BUILTIN) taking one INTEGER argument
+- **Returns**: `None` (NULL in Flowa); results of `fn` are ignored.
+
+This does **not** remove the cost of calling back into the interpreter each
+iteration, but it avoids extra allocations for loop structure and is a better
+fit for simple repeated calls than hand‑written Flowa `while`/`for` loops.
+
+> **Tip:** For maximum performance, prefer `fast_sum_to` / `fast_sum_range`
+> when you can express your workload as a numeric accumulation. Use
+> `fast_repeat` when you must run Flowa code each iteration but still want a
+> cheaper loop structure implemented in Go.
+
+### Timing & Benchmarking (`time` module)
+
+Use the built-in `time` module to measure elapsed time in milliseconds, similar
+to Go’s `time.Since(start).Seconds()` (but with integer millisecond precision).
+
+```python
+start = time.now_ms()
+
+# ... your heavy work here ...
+
+elapsed_ms = time.since_ms(start)
+print("Elapsed (ms):")
+print(elapsed_ms)
+```
+
+Combined with `fast_sum_to`, you can write Go-style numeric benchmarks:
+
+```python
+print("Starting intensive benchmark...")
+
+run = 0
+while run < 5:
+    start = time.now_ms()
+
+    sum = fast_sum_to(100000000)
+
+    elapsed_ms = time.since_ms(start)
+
+    print("Run:")
+    print(run + 1)
+    print("Sum:")
+    print(sum)
+    print("Time (ms):")
+    print(elapsed_ms)
+
+    run = run + 1
+
+print("Benchmark complete!")
+```

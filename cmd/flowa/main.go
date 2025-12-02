@@ -3,10 +3,12 @@ package main
 import (
 	"bufio"
 	"flowa/pkg/ast"
+	"flowa/pkg/compiler"
 	"flowa/pkg/eval"
 	"flowa/pkg/lexer"
 	"flowa/pkg/parser"
 	"flowa/pkg/version"
+	"flowa/pkg/vm"
 	"fmt"
 	"io"
 	"os"
@@ -19,6 +21,8 @@ import (
 )
 
 const PROMPT = ">>> "
+
+var useVM = true // Use the new VM by default
 
 func main() {
 	// Load .env file if it exists
@@ -152,11 +156,25 @@ func runFile(filename string) {
 		os.Exit(1)
 	}
 
-	env := eval.NewEnvironment()
-	evaluated := eval.Eval(program, env)
-	if evaluated != nil && evaluated.Type() == "ERROR" {
-		fmt.Fprintf(os.Stderr, "%s\n", evaluated.Inspect())
-		os.Exit(1)
+	if useVM {
+		// Use the optimized VM
+		result, err := runWithVM(program)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			os.Exit(1)
+		}
+		// Only print non-null results
+		if result != nil && result.Kind() != eval.KindNull {
+			fmt.Println(result.Inspect())
+		}
+	} else {
+		// Use the old tree-walk evaluator (for debugging)
+		env := eval.NewEnvironment()
+		evaluated := eval.Eval(program, env)
+		if evaluated != nil && evaluated.Kind() == eval.KindError {
+			fmt.Fprintf(os.Stderr, "%s\n", evaluated.Inspect())
+			os.Exit(1)
+		}
 	}
 }
 
@@ -322,6 +340,22 @@ func uninstallFlowa() {
 	fmt.Println("Flowa uninstalled successfully.")
 }
 
+func runWithVM(program *ast.Program) (eval.Object, error) {
+	comp := compiler.New()
+	err := comp.Compile(program)
+	if err != nil {
+		return nil, fmt.Errorf("compilation failed: %s", err)
+	}
+
+	machine := vm.New(comp.Bytecode())
+	err = machine.Run()
+	if err != nil {
+		return nil, fmt.Errorf("VM error: %s", err)
+	}
+
+	return machine.LastPoppedStackElem(), nil
+}
+
 func evalCode(code string) {
 	l := lexer.New(code)
 	p := parser.New(l)
@@ -332,16 +366,28 @@ func evalCode(code string) {
 		os.Exit(1)
 	}
 
-	env := eval.NewEnvironment()
-	evaluated := eval.Eval(program, env)
-	if evaluated != nil {
-		if evaluated.Type() == "ERROR" {
-			fmt.Fprintf(os.Stderr, "%s\n", evaluated.Inspect())
+	if useVM {
+		// Use the new VM
+		result, err := runWithVM(program)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}
-		// Only print result if it's not NULL (like print function return)
-		if evaluated.Type() != "NULL" {
-			fmt.Println(evaluated.Inspect())
+		if result != nil && result.Kind() != eval.KindNull {
+			fmt.Println(result.Inspect())
+		}
+	} else {
+		// Use the old tree-walk evaluator
+		env := eval.NewEnvironment()
+		evaluated := eval.Eval(program, env)
+		if evaluated != nil {
+			if evaluated.Kind() == eval.KindError {
+				fmt.Fprintf(os.Stderr, "%s\n", evaluated.Inspect())
+				os.Exit(1)
+			}
+			if evaluated.Kind() != eval.KindNull {
+				fmt.Println(evaluated.Inspect())
+			}
 		}
 	}
 }

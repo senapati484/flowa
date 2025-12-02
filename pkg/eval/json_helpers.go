@@ -16,7 +16,7 @@ func flowaToNative(obj Object) interface{} {
 	case *Null:
 		return nil
 	case *Array:
-		var result []interface{}
+		result := make([]interface{}, 0, len(obj.Elements))
 		for _, elem := range obj.Elements {
 			result = append(result, flowaToNative(elem))
 		}
@@ -61,7 +61,7 @@ func nativeToFlowa(val interface{}) Object {
 	case string:
 		return &String{Value: v}
 	case []interface{}:
-		var elements []Object
+		elements := make([]Object, 0, len(v))
 		for _, e := range v {
 			elements = append(elements, nativeToFlowa(e))
 		}

@@ -16,10 +16,11 @@ var upgrader = websocket.Upgrader{
 // WebSocketConnection wraps the gorilla websocket connection
 type WebSocketConnection struct {
 	Conn *websocket.Conn
+	kind ObjectKind
 }
 
-func (ws *WebSocketConnection) Type() string    { return "WEBSOCKET_CONNECTION" }
-func (ws *WebSocketConnection) Inspect() string { return "<WebSocketConnection>" }
+func (ws *WebSocketConnection) Kind() ObjectKind { return KindNative }
+func (ws *WebSocketConnection) Inspect() string  { return "<WebSocketConnection>" }
 
 func upgradeToWebSocket(w http.ResponseWriter, r *http.Request) (*WebSocketConnection, error) {
 	conn, err := upgrader.Upgrade(w, r, nil)

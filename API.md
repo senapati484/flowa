@@ -7,6 +7,7 @@ Complete reference for all built-in modules and functions.
 ## Core Language
 
 ### `print(value...)`
+
 Print values to console.
 
 ```python
@@ -19,9 +20,11 @@ print("Name:", name, "Age:", age)
 ## JSON Module
 
 ### `json.encode(data)`
+
 Convert Flowa objects to JSON string.
 
 **Parameters:**
+
 - `data` - Map, Array, String, Integer, or Boolean
 
 **Returns:** String (JSON)
@@ -33,9 +36,11 @@ json_str = json.encode(data)
 ```
 
 ### `json.decode(json_string)`
+
 Parse JSON string to Flowa object.
 
 **Parameters:**
+
 - `json_string` - Valid JSON string
 
 **Returns:** Map, Array, or primitive type
@@ -51,6 +56,7 @@ name = data["name"]  # "Alice"
 ## Response Module
 
 ### `response.json(data, status)`
+
 Create JSON response.
 
 ```python
@@ -59,6 +65,7 @@ response.json({"error": "Not found"}, 404)
 ```
 
 ### `response.text(text, status)`
+
 Create plain text response.
 
 ```python
@@ -66,6 +73,7 @@ response.text("Hello World", 200)
 ```
 
 ### `response.html(html, status)`
+
 Create HTML response.
 
 ```python
@@ -73,6 +81,7 @@ response.html("<h1>Welcome</h1>", 200)
 ```
 
 ### `response.redirect(url, status)`
+
 Create redirect response.
 
 ```python
@@ -82,12 +91,63 @@ response.redirect("/login", 301)
 
 ---
 
+## Time Module
+
+### `time.now_ms()`
+
+Get current time in milliseconds since Unix epoch.
+
+**Returns:** Integer (milliseconds)
+
+```python
+start = time.now_ms()
+```
+
+### `time.since_ms(start_ms)`
+
+Get elapsed milliseconds since a start time.
+
+**Parameters:**
+
+- `start_ms` (INTEGER) - Start time from `time.now_ms()`
+
+**Returns:** Integer (elapsed milliseconds)
+
+```python
+start = time.now_ms()
+# ... do work ...
+elapsed_ms = time.since_ms(start)
+print("Elapsed (ms):", elapsed_ms)
+```
+
+### `time.since_s(start_ms, precision)`
+
+Get elapsed time formatted as a string with decimal seconds (recommended for output).
+
+**Parameters:**
+
+- `start_ms` (INTEGER) - Start time from `time.now_ms()`
+- `precision` (INTEGER, optional) - Decimal places (default: 3)
+
+**Returns:** String (formatted as seconds, e.g., "1.454")
+
+```python
+start = time.now_ms()
+# ... do work ...
+elapsed_s = time.since_s(start, 3)  # "1.454" with 3 decimal places
+print("Time:", elapsed_s, "s")
+```
+
+---
+
 ## Config Module
 
 ### `config.env(key, default)`
+
 Read environment variable.
 
 **Parameters:**
+
 - `key` - Environment variable name
 - `default` - Default value if not set
 
@@ -103,6 +163,7 @@ db_url = config.env("DATABASE_URL", "postgres://localhost/db")
 ## Middleware Module
 
 ### `middleware.logger()`
+
 Request logging middleware.
 
 Logs: `[LOG] METHOD PATH`
@@ -113,9 +174,11 @@ use logger
 ```
 
 ### `middleware.cors()`
+
 Add CORS headers to response.
 
 Headers:
+
 - `Access-Control-Allow-Origin: *`
 - `Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS`
 - `Access-Control-Allow-Headers: Content-Type, Authorization`
@@ -130,9 +193,11 @@ get "/api/data" -> handler, [cors]
 ## Mail Module
 
 ### `mail.send(config)`
+
 Send email via SMTP.
 
 **Parameters:**
+
 - `config` - Map with keys:
   - `to` (String) - Recipient email
   - `from` (String, optional) - Sender email
@@ -151,6 +216,7 @@ mail.send({
 ```
 
 **Environment Variables:**
+
 ```bash
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -159,9 +225,11 @@ SMTP_PASS=your_app_password
 ```
 
 ### `mail.send_template(template, data)`
+
 Send email with template.
 
 **Parameters:**
+
 - `template` - String with `{{variable}}` placeholders
 - `data` - Map with template variables + email config
 
@@ -176,6 +244,7 @@ mail.send_template(template, {
 ```
 
 ### `mail.queue(config)`
+
 Send email in background (async).
 
 ```python
@@ -191,9 +260,11 @@ mail.queue({
 ## Auth Module
 
 ### `auth.hash_password(password)`
+
 Hash password with bcrypt.
 
 **Parameters:**
+
 - `password` - Plain text password (String)
 
 **Returns:** String (bcrypt hash)
@@ -207,9 +278,11 @@ hash = auth.hash_password(password)
 ```
 
 ### `auth.verify_password(hash, password)`
+
 Verify password against hash.
 
 **Parameters:**
+
 - `hash` - Bcrypt hash (String)
 - `password` - Plain text password to verify (String)
 
@@ -226,9 +299,11 @@ invalid = auth.verify_password(hash, "wrong")       # False
 ## JWT Module
 
 ### `jwt.sign(payload, secret, expiresIn)`
+
 Create signed JWT token.
 
 **Parameters:**
+
 - `payload` - Map with data to encode
 - `secret` - Signing key (String)
 - `expiresIn` - Duration string (e.g., "1h", "24h", "7d")
@@ -244,15 +319,18 @@ token = jwt.sign(payload, "my-secret-key", "24h")
 ```
 
 **Duration formats:**
+
 - `"1h"` - 1 hour
 - `"24h"` - 24 hours
 - `"30m"` - 30 minutes
 - `"7d"` - 7 days
 
 ### `jwt.verify(token, secret)`
+
 Verify and decode JWT token.
 
 **Parameters:**
+
 - `token` - JWT token string
 - `secret` - Signing key (must match sign key)
 
@@ -274,9 +352,11 @@ else:
 ## WebSocket Module
 
 ### `websocket.upgrade(req)`
+
 Upgrade HTTP connection to WebSocket.
 
 **Parameters:**
+
 - `req` - Request object from route handler
 
 **Returns:** Connection object or None (upgrade failed)
@@ -290,9 +370,11 @@ def wsHandler(req):
 ```
 
 ### `websocket.send(conn, message)`
+
 Send text message to client.
 
 **Parameters:**
+
 - `conn` - WebSocket connection
 - `message` - String to send
 
@@ -304,9 +386,11 @@ websocket.send(conn, json.encode({"type": "update", "data": 123}))
 ```
 
 ### `websocket.read(conn)`
+
 Read next message from client (blocking).
 
 **Parameters:**
+
 - `conn` - WebSocket connection
 
 **Returns:** String (message) or None (disconnected)
@@ -320,9 +404,11 @@ while True:
 ```
 
 ### `websocket.close(conn)`
+
 Close WebSocket connection.
 
 **Parameters:**
+
 - `conn` - WebSocket connection
 
 ```python
@@ -345,12 +431,14 @@ Available in route handlers as `req` parameter.
 ### Maps
 
 - `req.params` - Path parameters (Map)
+
   ```python
   # Route: /users/:id
   id = req.params["id"]
   ```
 
 - `req.query` - Query parameters (Map)
+
   ```python
   # GET /search?q=flowa&page=1
   q = req.query["q"]        # "flowa"
@@ -358,12 +446,14 @@ Available in route handlers as `req` parameter.
   ```
 
 - `req.headers` - HTTP headers (Map, case-insensitive)
+
   ```python
   content_type = req.headers["content-type"]
   auth = req.headers["authorization"]
   ```
 
 - `req.cookies` - Cookies (Map)
+
   ```python
   session = req.cookies["session_id"]
   ```
@@ -379,6 +469,7 @@ Available in route handlers as `req` parameter.
 ## Service Definition
 
 ### `service NAME on "ADDRESS":`
+
 Define HTTP server.
 
 ```python
@@ -388,18 +479,21 @@ service MyAPI on ":8080":
 ```
 
 ### Route Methods
+
 - `get PATH -> HANDLER`
 - `post PATH -> HANDLER`
 - `put PATH -> HANDLER`
 - `delete PATH -> HANDLER`
 
 ### Path Parameters
+
 ```python
 get "/users/:id" -> get_user
 get "/posts/:post_id/comments/:comment_id" -> get_comment
 ```
 
 ### Middleware
+
 ```python
 # Global middleware
 use logger
@@ -413,6 +507,7 @@ get "/api/data" -> handler, [cors, auth]
 ## Examples
 
 ### Full Auth Flow
+
 ```python
 users = {}
 
@@ -436,6 +531,7 @@ service AuthAPI on ":8080":
 ```
 
 ### WebSocket Chat
+
 ```python
 def chat(req):
     conn = websocket.upgrade(req)
