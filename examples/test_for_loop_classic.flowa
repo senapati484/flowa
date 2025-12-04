@@ -1,0 +1,56 @@
+# Test Classic For-Loops
+print("=== Testing Classic For-Loops ===\n")
+
+# Test 1: Basic for loop
+print("--- Basic For Loop ---")
+for(i=0; i<5; i=i+1){
+    print("i =", i)
+}
+
+# Test 2: Sum using for loop
+print("\n--- Sum 1 to 10 ---")
+sum = 0
+for(i=1; i<=10; i=i+1){
+    sum = sum + i
+}
+print("sum = 1+2+...+10 =", sum)
+
+# Test 3: Countdown
+print("\n--- Countdown ---")
+for(i=5; i>0; i=i-1){
+    print(i)
+}
+print("Liftoff!")
+
+# Test 4: Step by 2
+print("\n--- Even Numbers 0-10 ---")
+for(i=0; i<=10; i=i+1){
+    if(i % 2 == 0){
+        print(i)
+    }
+}
+
+# Test 5: Nested for loops
+print("\n--- Multiplication Table (3x3) ---")
+for(i=1; i<=3; i=i+1){
+    for(j=1; j<=3; j=j+1){
+        product = i * j
+        print(i, "*", j, "=", product)
+    }
+}
+
+# Test 6: No init
+print("\n--- No Init Statement ---")
+x = 0
+for(; x<3; x=x+1){
+    print("x =", x)
+}
+
+# Test 7: Empty post
+print("\n--- Manual Increment ---")
+for(k=0; k<3; ){
+    print("k =", k)
+    k = k + 1
+}
+
+print("\n✅ Classic for-loop tests completed")

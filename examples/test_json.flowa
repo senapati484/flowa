@@ -1,8 +1,0 @@
-# Test JSON module
-data = {"name": "Flowa", "version": 1}
-encoded = json.encode(data)
-print("Encoded:", encoded)
-
-decoded = json.decode(encoded)
-print("Decoded name:", decoded["name"])
-print("Decoded version:", decoded["version"])

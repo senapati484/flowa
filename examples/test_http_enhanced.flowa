@@ -1,0 +1,34 @@
+# Test HTTP Server with Enhanced Request Object
+print("Testing HTTP Server with enhanced request...")
+
+# Test handler that access all request fields
+func test_handler(req){
+    print("Method:", req["method"])
+    print("Path:", req["path"])
+    print("IP:", req["ip"])
+    print("Body:", req["body"])
+    
+    # Test query params
+    query = req["query"]
+    print("Query params:", query)
+    
+    # Test path params
+    params = req["params"]
+    print("Path params:", params)
+    
+    # Test headers
+    headers = req["headers"]
+    print("Headers present")
+    
+    return response["json"]({"message": "Request received", "path": req["path"]}, 200)
+}
+
+# Register routes including path parameter route
+http["route"]("GET", "/test", test_handler)
+http["route"]("GET", "/users/:id", test_handler)
+
+print("Server starting on :8080...")
+print("Test with: curl 'http://localhost:8080/test?name=Alice'")
+print("Test with: curl 'http://localhost:8080/users/123'")
+
+http["listen"](8080)

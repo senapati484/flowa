@@ -1,0 +1,32 @@
+# Flowa Example 09: Advanced Features
+# Tests Imports and New Modules
+
+print("=== 09: Advanced Features ===\n")
+
+# 1. Imports
+print("--- Imports ---")
+import "math_lib"
+
+print("PI from module:", math_lib["PI"])
+sum = math_lib["add"](10, 20)
+print("Sum from module:", sum)
+
+# 2. HTTP Server (Check existence)
+print("\n--- HTTP Server ---")
+print("http module loaded:", http)
+# http["route"]("GET", "/", func(req){ return response["text"]("Hello", 200) })
+# http["listen"](":8080") 
+
+# 3. Websockets (Check existence)
+print("\n--- Websockets ---")
+print("websocket module loaded:", websocket)
+
+# 4. Email (Check existence)
+print("\n--- Mail ---")
+print("mail module loaded:", mail)
+
+# 5. JWT (Check existence)
+print("\n--- JWT ---")
+print("jwt module loaded:", jwt)
+
+print("\n✅ Advanced Features complete")

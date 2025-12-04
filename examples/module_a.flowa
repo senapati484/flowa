@@ -1,9 +1,0 @@
-# module_a.flowa
-
-def greet(name):
-    return "Hello, " + name + " from module_a!"
-
-PI = 314159
-
-def add(a, b):
-    return a + b

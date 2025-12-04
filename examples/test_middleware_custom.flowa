@@ -1,0 +1,82 @@
+# Test Middleware - Custom Middleware Functions
+# Tests: Custom middleware creation and execution
+
+print("=== Testing Custom Middleware ===")
+print("This test verifies custom middleware functions work correctly")
+print("")
+
+# Test 1: Create custom middleware function
+print("Test 1: Creating custom middleware functions")
+
+func timing_middleware(req, next) {
+    print("[TIMING] Request started:", req["method"], req["path"])
+    start = time.now_ms()
+    
+    # Call next middleware/handler
+    result = next()
+    
+    elapsed = time.since_ms(start)
+    print("[TIMING] Request completed in", elapsed, "ms")
+    
+    return result
+}
+
+func auth_check_middleware(req, next) {
+    print("[AUTH] Checking authorization")
+    
+    # In real app, check headers
+    # For testing, just log and proceed
+    print("[AUTH] Authorization passed")
+    
+    return next()
+}
+
+print("✓ Custom middleware functions created")
+
+# Test 2: Create route handlers
+func protected_handler(req) {
+    print("[HANDLER] Processing protected request")
+    return response.json({"message": "Protected data", "auth": true})
+}
+
+func public_handler(req) {
+    print("[HANDLER] Processing public request")
+    return response.json({"message": "Public data"})
+}
+
+# Test 3: Register routes with route-specific middleware
+print("Test 2: Registering routes with custom middleware")
+http.route("GET", "/public", public_handler)
+http.route("GET", "/protected", protected_handler, [auth_check_middleware])
+print("✓ Routes registered with middleware")
+
+# Test 4: Register global middleware
+print("Test 3: Registering global timing middleware")
+http.use(timing_middleware)
+print("✓ Global middleware registered")
+
+print("")
+print("Server starting on port 3003...")
+print("Expected behavior:")
+print("  - timing_middleware runs for ALL routes (global)")
+print("  - auth_check_middleware runs ONLY for /protected route")
+print("")
+print("Test commands:")
+print("  curl http://localhost:3003/public")
+print("  curl http://localhost:3003/protected")
+print("")
+print("Expected logs for /public:")
+print("  [TIMING] Request started: GET /public")
+print("  [HANDLER] Processing public request")
+print("  [TIMING] Request completed in X ms")
+print("")
+print("Expected logs for /protected:")
+print("  [TIMING] Request started: GET /protected")
+print("  [AUTH] Checking authorization")
+print("  [AUTH] Authorization passed")
+print("  [HANDLER] Processing protected request")
+print("  [TIMING] Request completed in X ms")
+print("===========================================")
+
+# Start server
+http.listen(3003)

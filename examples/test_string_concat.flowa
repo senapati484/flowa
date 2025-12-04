@@ -1,0 +1,23 @@
+# Test String Concatenation in VM
+print("=== Testing String Concatenation ===\n")
+
+# String + String
+result1 = "Hello" + " " + "World"
+print("String + String:", result1)
+
+# String + Integer
+name = "User"
+id = 42
+result2 = name + " ID: " + id
+print("String + Integer:", result2)
+
+# Integer + String  
+score = 100
+result3 = "Score: " + score
+print("Integer + String:", result3)
+
+# In expression
+message = "The answer is " + 42 + " !"
+print("Complex:", message)
+
+print("\n✅ String concatenation works!")

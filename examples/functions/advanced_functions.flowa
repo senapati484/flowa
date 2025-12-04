@@ -1,0 +1,84 @@
+# Advanced Functions - Recursion and Higher-Order
+
+print("Advanced Functions Example")
+print("============================================================")
+
+# Recursive function - factorial
+func factorial(n) {
+    if n <= 1 {
+        return 1
+    } else {
+        return n * factorial(n - 1)
+    }
+}
+
+# Recursive function - Fibonacci
+func fibonacci(n) {
+    if n <= 1 {
+        return n
+    } else {
+        return fibonacci(n - 1) + fibonacci(n - 2)
+    }
+}
+
+# Function that returns a function (closure-like)
+func create_multiplier(factor) {
+    # In a full implementation, this would capture 'factor'
+    # For now, we demonstrate the concept
+    func multiply(x) {
+        return x * factor
+    }
+    return multiply
+}
+
+# Higher-order function - apply operation
+func apply_operation(a, b, operation) {
+    if operation == "add" {
+        return a + b
+    } else {
+        if operation == "multiply" {
+            return a * b
+        } else {
+            if operation == "subtract" {
+                return a - b
+            } else {
+                return 0
+            }
+        }
+    }
+}
+
+# Recursive countdown
+func countdown(n) {
+    if n <= 0 {
+        print("  Blast off!")
+        return 0
+    } else {
+        print("  ", n)
+        return countdown(n - 1)
+    }
+}
+
+# Test the functions
+print("\n[1] Factorial (5!):")
+fact = factorial(5)
+print("  5! =", fact)
+
+print("\n[2] Fibonacci sequence (first 7):")
+i = 0
+while i < 7 {
+    fib = fibonacci(i)
+    print("  F(", i, ") =", fib)
+    i = i + 1
+}
+
+print("\n[3] Higher-order function:")
+result1 = apply_operation(10, 5, "add")
+result2 = apply_operation(10, 5, "multiply")
+print("  10 + 5 =", result1)
+print("  10 * 5 =", result2)
+
+print("\n[4] Recursive countdown:")
+countdown(5)
+
+print("\n✅ Advanced functions complete!")

@@ -1,0 +1,46 @@
+# Test Pipeline Operator
+print("Testing Pipeline Operator...")
+
+# Simple pipeline
+func increment(x){
+    return x + 1
+}
+
+func double(x){
+    return x * 2
+}
+
+func square(x){
+    return x * x
+}
+
+# Test 1: Basic pipeline
+result1 = 5 |> increment |> double
+print("5 |> increment |> double =", result1)  # Should be 12
+
+# Test 2: Longer pipeline
+result2 = 3 |> increment |> double |> square
+print("3 |> increment |> double |> square =", result2)  # Should be 64
+
+# Test 3: Pipeline with different types
+func to_string(x){
+    return "Number: " + x
+}
+
+result3 = 42 |> to_string
+print("42 |> to_string =", result3)
+
+# Test 4: Pipeline with arrays
+func get_length(arr){
+    return len(arr)
+}
+
+func add_ten(x){
+    return x + 10
+}
+
+arr = [1, 2, 3, 4, 5]
+result4 = arr |> get_length |> add_ten
+print("[1,2,3,4,5] |> get_length |> add_ten =", result4)  # Should be 15
+
+print("✅ Pipeline test completed.")

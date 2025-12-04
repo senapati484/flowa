@@ -171,6 +171,35 @@ func (fs *ForStatement) String() string {
 	return out.String()
 }
 
+type ClassicForStatement struct {
+	Token     token.Token // 'for'
+	Init      Statement
+	Condition Expression
+	Post      Statement
+	Body      *BlockStatement
+}
+
+func (cfs *ClassicForStatement) statementNode()       {}
+func (cfs *ClassicForStatement) TokenLiteral() string { return cfs.Token.Literal }
+func (cfs *ClassicForStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("for (")
+	if cfs.Init != nil {
+		out.WriteString(cfs.Init.String())
+	}
+	out.WriteString("; ")
+	if cfs.Condition != nil {
+		out.WriteString(cfs.Condition.String())
+	}
+	out.WriteString("; ")
+	if cfs.Post != nil {
+		out.WriteString(cfs.Post.String())
+	}
+	out.WriteString(")")
+	out.WriteString(cfs.Body.String())
+	return out.String()
+}
+
 type ModuleStatement struct {
 	Token token.Token // 'module'
 	Name  *Identifier
@@ -315,6 +344,16 @@ func (ds *DeferStatement) String() string {
 	return out.String()
 }
 
+type BreakStatement struct {
+	Token token.Token // the 'break' token
+}
+
+func (bs *BreakStatement) statementNode()       {}
+func (bs *BreakStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BreakStatement) String() string {
+	return "break"
+}
+
 // Expressions
 
 type Identifier struct {
@@ -334,6 +373,15 @@ type IntegerLiteral struct {
 func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+
+type FloatLiteral struct {
+	Token token.Token
+	Value float64
+}
+
+func (fl *FloatLiteral) expressionNode()      {}
+func (fl *FloatLiteral) TokenLiteral() string { return fl.Token.Literal }
+func (fl *FloatLiteral) String() string       { return fl.Token.Literal }
 
 type StringLiteral struct {
 	Token token.Token
@@ -393,6 +441,23 @@ func (ie *InfixExpression) String() string {
 	out.WriteString(ie.Left.String())
 	out.WriteString(" " + ie.Operator + " ")
 	out.WriteString(ie.Right.String())
+	out.WriteString(")")
+	return out.String()
+}
+
+type PostfixExpression struct {
+	Token    token.Token // Operator token like ++
+	Operator string
+	Left     Expression
+}
+
+func (pe *PostfixExpression) expressionNode()      {}
+func (pe *PostfixExpression) TokenLiteral() string { return pe.Token.Literal }
+func (pe *PostfixExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(pe.Left.String())
+	out.WriteString(pe.Operator)
 	out.WriteString(")")
 	return out.String()
 }

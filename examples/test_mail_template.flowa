@@ -1,0 +1,13 @@
+# Test mail.send_template function
+print("Testing mail.send_template()...")
+
+# Define template with {{placeholders}}
+template = "Hello {{name}},\n\nYour verification code is: {{code}}\n\nThis code expires in {{expiry}}.\n\nBest regards,\nThe Flowa Team"
+
+# Send template email
+data = {"to": "sayansenapati2544@gmail.com", "subject": "Verification Code", "name": "Sayan", "code": "123456", "expiry": "10 minutes"}
+
+result = mail.send_template(template, data)
+print(result)
+
+print("✅ Template email test completed!")

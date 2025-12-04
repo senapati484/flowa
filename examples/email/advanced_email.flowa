@@ -1,0 +1,59 @@
+# Advanced Email - HTML Templates with Personalization
+
+print("Advanced Email with HTML Templates")
+print("============================================================")
+
+# Function to create HTML email template
+func create_welcome_email(name, email) {
+    html = "<html><body style='font-family: Arial;'>"
+    html = html + "<h1 style='color: #4CAF50;'>Welcome, " + name + "!</h1>"
+    html = html + "<p>Thank you for joining our platform.</p>"
+    html = html + "<p>Your account <strong>" + email + "</strong> is now active.</p>"
+    html = html + "<p>Get started by exploring our features:</p>"
+    html = html + "<ul><li>Feature 1: Easy to use</li>"
+    html = html + "<li>Feature 2: Fast and secure</li>"
+    html = html + "<li>Feature 3: Great support</li></ul>"
+    html = html + "<p>Best regards,<br>The Flowa Team</p>"
+    html = html + "</body></html>"
+    return html
+}
+
+# Function to send notification email
+func send_notification(to_email, event_type, details) {
+    subject = "Notification: " + event_type
+    
+    html_body = "<html><body>"
+    html_body = html_body + "<h2>System Notification</h2>"
+    html_body = html_body + "<p><strong>Event:</strong> " + event_type + "</p>"
+    html_body = html_body + "<p><strong>Details:</strong> " + details + "</p>"
+    html_body = html_body + "<p><em>This is an automated message.</em></p>"
+    html_body = html_body + "</body></html>"
+    
+    email = {
+        "to": to_email,
+        "subject": subject,
+        "body": "Event: " + event_type,
+        "html": html_body
+    }
+    
+    return mail.send(email)
+}
+
+# Example 1: Send welcome email
+print("\n[1] Sending welcome email...")
+welcome_html = create_welcome_email("Alice", "alice@example.com")
+welcome_email = {
+    "to": "alice@example.com",
+    "subject": "Welcome to Flowa!",
+    "body": "Welcome!",
+    "html": welcome_html
+}
+result1 = mail.send(welcome_email)
+print(result1)
+
+# Example 2: Send notification
+print("\n[2] Sending notification...") 
+result2 = send_notification("admin@example.com", "New User Signup", "Alice just joined the platform")
+print(result2)
+
+print("\n✅ Advanced email demo complete!")

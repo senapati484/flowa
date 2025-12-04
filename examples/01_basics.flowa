@@ -1,0 +1,57 @@
+# Flowa Example 01: Basics
+# This file demonstrates the fundamental building blocks of Flowa:
+# - Arithmetic operations
+# - Variables and assignment
+# - String operations
+# - Boolean logic and comparisons
+
+print("=== 01: Basics ===\n")
+
+# 1. Arithmetic Operations
+# Flowa supports standard integer arithmetic: +, -, *, /
+print("--- Arithmetic ---")
+a = 10 + 5
+print("10 + 5 =", a)       # 15
+
+b = 20 - 8
+print("20 - 8 =", b)       # 12
+
+c = 4 * 5
+print("4 * 5 =", c)        # 20
+
+d = 100 / 4
+print("100 / 4 =", d)      # 25
+
+# 2. Variables
+# Variables are dynamically typed and declared by assignment
+print("\n--- Variables ---")
+x = 100
+print("Initial x:", x)     # 100
+
+x = x + 50
+print("Updated x:", x)     # 150
+
+# 3. String Operations
+# Strings can be concatenated using the + operator
+# Flowa automatically converts numbers to strings during concatenation
+print("\n--- Strings ---")
+name = "Flowa"
+greeting = "Hello, " + name + "!"
+print(greeting)            # Hello, Flowa!
+
+score = 85
+msg = "Score: " + score
+print(msg)                 # Score: 85
+
+# 4. Boolean Logic
+# Flowa supports standard comparison operators: ==, !=, >, <, >=, <=
+print("\n--- Boolean Logic ---")
+print("10 == 10:", 10 == 10)   # true
+print("10 != 5:", 10 != 5)     # true
+print("20 > 10:", 20 > 10)     # true
+print("5 < 10:", 5 < 10)       # true
+
+is_valid = true
+print("Is valid:", is_valid)   # true
+
+print("\n✅ Basics complete")

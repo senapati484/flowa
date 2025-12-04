@@ -1,0 +1,2 @@
+import "math_lib"
+print("Type of math_lib:", math_lib)

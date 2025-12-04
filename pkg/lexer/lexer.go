@@ -81,12 +81,22 @@ func (l *Lexer) NextToken() token.Token {
 			tok = newToken(token.ASSIGN, l.ch, l.line, l.column)
 		}
 	case '+':
-		tok = newToken(token.PLUS, l.ch, l.line, l.column)
+		if l.peekChar() == '+' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.PLUS_PLUS, Literal: string(ch) + string(l.ch), Line: l.line, Column: l.column}
+		} else {
+			tok = newToken(token.PLUS, l.ch, l.line, l.column)
+		}
 	case '-':
 		if l.peekChar() == '>' {
 			ch := l.ch
 			l.readChar()
 			tok = token.Token{Type: token.ARROW, Literal: string(ch) + string(l.ch), Line: l.line, Column: l.column}
+		} else if l.peekChar() == '-' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.MINUS_MINUS, Literal: string(ch) + string(l.ch), Line: l.line, Column: l.column}
 		} else {
 			tok = newToken(token.MINUS, l.ch, l.line, l.column)
 		}
@@ -130,6 +140,8 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.COMMA, l.ch, l.line, l.column)
 	case ':':
 		tok = newToken(token.COLON, l.ch, l.line, l.column)
+	case ';':
+		tok = newToken(token.SEMICOLON, l.ch, l.line, l.column)
 	case '(':
 		tok = newToken(token.LPAREN, l.ch, l.line, l.column)
 	case ')':

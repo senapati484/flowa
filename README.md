@@ -23,8 +23,9 @@
 
 ```python
 # Simple, powerful syntax
-def process(data):
+func process(data){
     return data |> validate() |> transform() |> save()
+}
 
 # Built-in server with auth
 service API on ":8080":
@@ -55,7 +56,7 @@ cd flowa
 
 **Verify:**
 ```bash
-flowa --version  # Flowa 0.1.1
+flowa --version  # Flowa 0.1.2
 ```
 
 > **Note:** Requires Go 1.20+. [Install Go](https://go.dev/doc/install) if needed.
@@ -93,16 +94,17 @@ Flowa combines **Python's simplicity** with **Go's performance**, plus built-in 
 **1. Hello World**
 ```python
 # hello.flowa
-def greet(name):
+func greet(name){
     return "Hello, " + name
+}
 
 print(greet("World"))  # Hello, World
 ```
 
 **2. Pipeline Example**
 ```python
-def increment(x): return x + 1
-def square(x): return x * x
+func increment(x){ return x + 1 }
+func square(x){ return x * x }
 
 result = 5 |> increment() |> square()
 print(result)  # 36
@@ -110,8 +112,9 @@ print(result)  # 36
 
 **3. Simple Web Server**
 ```python
-def hello(req):
+func hello(req){
     return response.json({"message": "Hello, Flowa!"}, 200)
+}
 
 service API on ":8080":
     get "/" -> hello
@@ -144,10 +147,11 @@ claims = jwt.verify(token, "secret")
 
 **🔌 WebSocket** – Real-time communication
 ```python
-def chat(req):
+func chat(req){
     conn = websocket.upgrade(req)
     msg = websocket.read(conn)
     websocket.send(conn, "Echo: " + msg)
+}
 ```
 
 **📧 Email** – SMTP with HTML templates

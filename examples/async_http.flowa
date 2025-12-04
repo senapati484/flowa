@@ -1,9 +1,0 @@
-print("Async HTTP:")
-
-async def fetch_google():
-    return await async_http_get("https://www.google.com")
-
-task = spawn fetch_google()
-body = await task
-
-print("Body length:", len(body))  # just print length

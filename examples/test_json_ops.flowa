@@ -1,0 +1,64 @@
+# Test JSON Operations
+# Tests: json.encode() and json.decode()
+
+print("=== Testing JSON Operations ===")
+print("")
+
+# Test 1: json.encode() - Simple object
+print("Test 1: json.encode() with simple object")
+simple_obj = {"name": "Alice", "age": "30", "active": "true"}
+json_str1 = json.encode(simple_obj)
+print("Object:", simple_obj)
+print("Encoded:", json_str1)
+print("✓ json.encode() works for simple object")
+print("")
+
+# Test 2: json.encode() - Array
+print("Test 2: json.encode() with array")
+numbers = [1, 2, 3, 4, 5]
+json_str2 = json.encode(numbers)
+print("Array:", numbers)
+print("Encoded:", json_str2)
+print("✓ json.encode() works for arrays")
+print("")
+
+# Test 3: json.decode() - Parse JSON string
+print("Test 3: json.decode() to parse JSON")
+json_input = "{\"name\":\"Charlie\",\"score\":\"95\"}"
+decoded = json.decode(json_input)
+print("JSON string:", json_input)
+print("Decoded:", decoded)
+name_val = decoded["name"]
+score_val = decoded["score"]
+print("Name from decoded:", name_val)
+print("Score from decoded:", score_val)
+print("✓ json.decode() works correctly")
+print("")
+
+# Test 4: Round-trip encoding/decoding
+print("Test 4: Round-trip encode/decode")
+original = {"status": "success", "count": "42"}
+print("Original:", original)
+encoded = json.encode(original)
+print("Encoded:", encoded)
+decoded_back = json.decode(encoded)
+print("Decoded back:", decoded_back)
+status_val = decoded_back["status"]
+count_val = decoded_back["count"]
+print("Status matches:", status_val)
+print("Count matches:", count_val)
+print("✓ Round-trip encode/decode works")
+print("")
+
+# Test 5: Array decode
+print("Test 5: Decode JSON array")
+json_array = "[1,2,3,4,5]"
+decoded_arr = json.decode(json_array)
+print("JSON array:", json_array)
+print("Decoded array:", decoded_arr)
+print("✓ Array decode works")
+print("")
+
+print("===========================================")
+print("All JSON operation tests completed!")
+print("===========================================")

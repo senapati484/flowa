@@ -1,0 +1,61 @@
+# Test http.use() - Global Middleware
+# Tests that http.use() registers middleware globally for all routes
+
+print("=== Testing http.use() Global Middleware ===")
+print("This test verifies http.use() applies middleware to all routes")
+print("")
+
+# Define custom middleware
+func request_counter(req, next) {
+    print("[COUNTER] Request received")
+    result = next()
+    print("[COUNTER] Request completed")
+    return result
+}
+
+func auth_middleware(req, next) {
+    print("[AUTH] Checking authentication")
+    result = next()
+    return result
+}
+
+# Define route handlers  
+func home_handler(req) {
+    print("[HANDLER] Home route")
+    return response.json({"page": "home"})
+}
+
+func api_handler(req) {
+    print("[HANDLER] API route")
+    return response.json({"data": "api response"})
+}
+
+# Test: Apply global middleware using http.use()
+print("Test: Registering global middleware with http.use()")
+http.use(request_counter)
+http.use(auth_middleware)
+print("✓ Global middleware registered")
+print("")
+
+# Register routes
+http.route("GET", "/", home_handler)
+http.route("GET", "/api", api_handler)
+print("✓ Routes registered")
+print("")
+
+print("Server starting on port 3010...")
+print("Expected: Both middlewares run for ALL routes")
+print("")
+print("Test commands:")
+print("  curl http://localhost:3010/")
+print("  curl http://localhost:3010/api")
+print("")
+print("Expected logs for each request:")
+print("  [COUNTER] Request received")
+print("  [AUTH] Checking authentication")
+print("  [HANDLER] <route name>")
+print("  [COUNTER] Request completed")
+print("===========================================")
+
+# Start server
+http.listen(3010)

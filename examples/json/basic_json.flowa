@@ -1,0 +1,28 @@
+# Basic JSON - Encode and Decode
+
+print("Basic JSON Example")
+print("============================================================")
+
+# Encode data to JSON
+print("\n[1] Encode to JSON:")
+data = {"name": "Alice", "age": "30", "city": "NYC"}
+json_string = json.encode(data)
+print("  Original:", data)
+print("  JSON:", json_string)
+
+# Decode JSON to data
+print("\n[2] Decode from JSON:")
+json_text = "{\"name\":\"Bob\",\"score\":100}"
+decoded = json.decode(json_text)
+print("  JSON:", json_text)
+print("  Decoded:", decoded)
+print("  Name:", decoded["name"])
+
+# Array to JSON
+print("\n[3] Array to JSON:")
+numbers = [1, 2, 3, 4, 5]
+json_array = json.encode(numbers)
+print("  Array:", numbers)
+print("  JSON:", json_array)
+
+print("\n✅ Basic JSON complete!")

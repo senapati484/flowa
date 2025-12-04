@@ -1,0 +1,45 @@
+# Flowa Example 07: Authentication
+# This file demonstrates the Auth module:
+# - Hashing passwords
+# - Verifying passwords
+# - Signing JWT tokens
+# - Verifying JWT tokens
+
+print("=== 07: Authentication ===\n")
+
+# 1. Password Hashing
+# Use auth["hash_password"](password) to securely hash a password.
+print("--- Password Hashing ---")
+password = "super_secret_password"
+print("Original:", password)
+
+hash = auth["hash_password"](password)
+print("Hashed:", hash)
+
+# 2. Password Verification
+# Use auth["verify_password"](hash, password) to check if they match.
+print("\n--- Password Verification ---")
+is_match = auth["verify_password"](hash, password)
+print("Matches original:", is_match)  # true
+
+is_match_wrong = auth["verify_password"](hash, "wrong_password")
+print("Matches wrong:", is_match_wrong) # false
+
+# 3. JWT Tokens
+# Use auth["sign_token"](payload, secret, expiry) to create a token.
+print("\n--- JWT Tokens ---")
+payload = {"user_id": 123, "role": "admin"}
+secret = "my_secret_key"
+expiry = "1h" # 1 hour
+
+token = jwt["sign"](payload, secret, expiry)
+print("Generated Token:", token)
+
+# 4. Verify Token
+# Use jwt["verify"](token, secret) to decode and verify.
+print("\n--- Verify Token ---")
+decoded = jwt["verify"](token, secret)
+print("Decoded Payload:", decoded)
+print("User ID:", decoded["user_id"])
+
+print("\n✅ Authentication complete")

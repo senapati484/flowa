@@ -1,0 +1,38 @@
+# Test Middleware - CORS Functionality
+# Tests: middleware.cors() - built-in CORS middleware
+
+print("=== Testing Middleware CORS ===")
+print("This test verifies that middleware.cors() adds correct headers")
+print("")
+
+# Create route handler
+func api_handler(req) {
+    print("[HANDLER] Processing API request")
+    return response.json({"message": "API with CORS", "allowed": true})
+}
+
+# Test 1: Apply CORS middleware globally
+print("Test 1: Registering global CORS middleware")
+http.use(middleware.cors())
+print("✓ CORS middleware registered globally")
+
+# Register routes
+print("Test 2: Registering routes")
+http.route("GET", "/api/data", api_handler)
+print("✓ Routes registered")
+
+print("")
+print("Server starting on port 3002...")
+print("Expected: CORS middleware should add these headers:")
+print("  Access-Control-Allow-Origin: *")
+print("  Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS")
+print("  Access-Control-Allow-Headers: Content-Type, Authorization")
+print("")
+print("Test command:")
+print("  curl -i http://localhost:3002/api/data")
+print("")
+print("Look for CORS headers in response")
+print("===========================================")
+
+# Start server
+http.listen(3002)

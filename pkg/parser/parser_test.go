@@ -37,9 +37,9 @@ return 993322
 }
 
 func TestFunctionStatement(t *testing.T) {
-	input := `
-def add(x, y):
-    return x + y
+	input := `func add(x, y){
+return x + y
+}
 `
 	l := lexer.New(input)
 	p := New(l)

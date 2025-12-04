@@ -51,8 +51,9 @@ You should see a simple pipeline‑driven program execute.
 Create `demo.flowa`:
 
 ```python
-def double(x):
+func double(x){
     return x * 2
+}
 
 result = 5 |> double()
 print(result)
@@ -74,8 +75,9 @@ flowa repl
 
 ```text
 Flowa REPL v0.1 (MVP)
->>> def double(x):
+>>> func double(x){
 ...     return x * 2
+... }
 >>> 5 |> double()
 10
 ```

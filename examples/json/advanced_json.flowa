@@ -1,0 +1,96 @@
+# Advanced JSON - API Integration and Complex Data
+
+print("Advanced JSON - API Integration")
+print("============================================================")
+
+# Complex nested JSON structure
+print("\n[1] Complex JSON encoding:")
+api_response = {
+    "status": "success",
+    "data": {
+        "users": [
+            {"id": "1", "name": "Alice", "active": "true"},
+            {"id": "2", "name": "Bob", "active": "false"}
+        ],
+        "count": "2"
+    },
+    "meta": {
+        "timestamp": "2025-01-01",
+        "version": "v1"
+    }
+}
+
+json_output = json.encode(api_response)
+print("  JSON Response:")
+print("  ", json_output)
+
+# Parse and transform JSON
+print("\n[2] Parse and extract data:")
+parsed = json.decode(json_output)
+print("  Status:", parsed["status"])
+print("  User count:", parsed["data"]["count"])
+
+users = parsed["data"]["users"]
+print("  First user:", users[0]["name"])
+
+# Function to create API response
+func create_api_response(status, data, message) {
+    response = {
+        "status": status,
+        "data": data,
+        "message": message,
+        "timestamp": "2025-01-01T00:00:00Z"
+    }
+    return json.encode(response)
+}
+
+# Function to validate JSON structure
+func validate_user_json(user_data) {
+    # Check required fields
+    has_name = user_data["name"] != nil
+    has_email = user_data["email"] != nil
+    
+    if has_name {
+        if has_email {
+            return true
+        }
+    }
+    return false
+}
+
+# Test API response creation
+print("\n[3] Create API response:")
+user_data = {"id": "123", "name": "Charlie", "email": "charlie@example.com"}
+api_json = create_api_response("success", user_data, "User created")
+print("  API Response:", api_json)
+
+# Test validation
+print("\n[4] Validate JSON structure:")
+valid_user = {"name": "Alice", "email": "alice@example.com"}
+invalid_user = {"name": "Bob"}
+
+is_valid1 = validate_user_json(valid_user)
+is_valid2 = validate_user_json(invalid_user)
+
+print("  Valid user:", is_valid1)
+print("  Invalid user:", is_valid2)
+
+# Nested JSON transformation
+print("\n[5] Transform nested JSON:")
+raw_data = [
+    {"name": "Alice", "score": "10"},
+    {"name": "Bob", "score": "20"},
+    {"name": "Charlie", "score": "15"}
+]
+
+# Calculate total
+total_score = 0
+for item in raw_data {
+    # In a real scenario, we'd parse the score string to int
+    print("  ", item["name"], ":", item["score"])
+}
+
+transformed = {"players": raw_data, "total": "3"}
+print("  Transformed:", json.encode(transformed))
+
+print("\n✅ Advanced JSON complete!")

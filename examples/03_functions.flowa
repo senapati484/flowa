@@ -1,0 +1,54 @@
+# Flowa Example 03: Functions
+# This file demonstrates how to define and use functions:
+# - Function definition using 'func' keyword
+# - Parameters and return values
+# - Scope and visibility
+# - Nested function calls
+
+print("=== 03: Functions ===\n")
+
+# IMPORTANT: Functions must be defined BEFORE they are called.
+
+# 1. Simple Function
+# Define a function with no parameters.
+func greet(){
+    print("Hello from function!")
+}
+
+# 2. Function with Parameters and Return Value
+# Functions can take arguments and return a value.
+func add(x, y){
+    return x + y
+}
+
+# 3. Function with String Operations
+func makeGreeting(name){
+    return "Hello, " + name + "!"
+}
+
+# 4. Helper Functions for Nesting
+func double(x){
+    return x * 2
+}
+
+func triple(x){
+    return x * 3
+}
+
+# --- Execution ---
+
+print("--- Basic Calls ---")
+greet()
+
+result = add(10, 20)
+print("add(10, 20) =", result)    # 30
+
+msg = makeGreeting("Flowa")
+print(msg)                         # Hello, Flowa!
+
+print("\n--- Nested Calls ---")
+# Functions can be passed as arguments to other functions
+val = double(triple(5))
+print("double(triple(5)) =", val)  # 30 (5 * 3 * 2)
+
+print("\n✅ Functions complete")

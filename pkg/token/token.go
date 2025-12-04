@@ -18,13 +18,16 @@ const (
 	STRING = "STRING"
 
 	// Operators
-	ASSIGN   = "="
-	PLUS     = "+"
-	MINUS    = "-"
-	BANG     = "!"
-	ASTERISK = "*"
-	SLASH    = "/"
-	PIPE     = "|>" // Pipeline operator
+	ASSIGN      = "="
+	PLUS        = "+"
+	MINUS       = "-"
+	BANG        = "!"
+	ASTERISK    = "*"
+	SLASH       = "/"
+	PIPE        = "|>" // Pipeline operator
+	SEMICOLON   = ";"
+	PLUS_PLUS   = "++"
+	MINUS_MINUS = "--"
 
 	LT     = "<"
 	GT     = ">"
@@ -46,7 +49,7 @@ const (
 	DOT      = "."
 
 	// Keywords
-	DEF    = "DEF"
+	FUNC   = "FUNC"
 	ASYNC  = "ASYNC"
 	RETURN = "RETURN"
 	IF     = "IF"
@@ -65,6 +68,7 @@ const (
 	FROM   = "FROM"
 	TYPE   = "TYPE"
 	DEFER  = "DEFER"
+	BREAK  = "BREAK"
 
 	// Server
 	SERVICE = "SERVICE"
@@ -89,7 +93,7 @@ func (t Token) String() string {
 }
 
 var keywords = map[string]TokenType{
-	"def":     DEF,
+	"func":    FUNC,
 	"async":   ASYNC,
 	"return":  RETURN,
 	"if":      IF,
@@ -116,6 +120,7 @@ var keywords = map[string]TokenType{
 	"delete":  DELETE,
 	"ws":      WS,
 	"use":     USE,
+	"break":   BREAK,
 }
 
 func LookupIdent(ident string) TokenType {

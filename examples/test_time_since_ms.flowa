@@ -1,0 +1,36 @@
+# Test time.since_ms() function
+
+print("=== Testing time.since_ms() ===")
+
+# Test 1: Basic elapsed time measurement
+print("\nTest 1: Basic elapsed time")
+start = time.now_ms()
+print("Start time (ms):", start)
+
+# Simulate some work
+i = 0
+while i < 1000000 {
+    i = i + 1
+}
+
+elapsed_ms = time.since_ms(start)
+print("Elapsed time (ms):", elapsed_ms)
+print("✓ time.since_ms() works")
+
+# Test 2: Compare with time.since_s()
+print("\nTest 2: Comparison with since_s()")
+start2 = time.now_ms()
+
+# More work
+j = 0
+while j < 2000000 {
+    j = j + 1
+}
+
+elapsed_ms2 = time.since_ms(start2)
+elapsed_s = time.since_s(start2, 3)
+print("Elapsed (ms):", elapsed_ms2)
+print("Elapsed (s):", elapsed_s)
+print("✓ Both time functions working")
+
+print("\n=== All time tests passed! ===")

@@ -1,0 +1,35 @@
+# Flowa Example 05: Modules & Built-ins
+# This file demonstrates built-in modules:
+# - JSON module for encoding/decoding
+# - Time module (if available)
+# - Using module functions
+
+print("=== 05: Modules & Built-ins ===\n")
+
+# 1. JSON Module
+# Used to convert data structures to strings and back.
+# Access module functions using bracket notation: module["function"](args)
+print("--- JSON Module ---")
+
+# Encode: Map -> JSON String
+data = {"name": "Alice", "age": 30}
+json_str = json["encode"](data)
+print("Encoded JSON:", json_str)
+
+# Decode: JSON String -> Map
+decoded = json["decode"](json_str)
+print("Decoded Name:", decoded["name"])
+print("Decoded Age:", decoded["age"])
+
+# Arrays in JSON
+arr_data = {"items": [1, 2, 3], "total": 3}
+arr_json = json["encode"](arr_data)
+print("Array JSON:", arr_json)
+
+# 2. Time Module (if supported)
+# Access time functions
+# print("\n--- Time Module ---")
+# current = time["now"]()
+# print("Current timestamp:", current)
+
+print("\n✅ Modules complete")

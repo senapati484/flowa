@@ -1,0 +1,93 @@
+# Advanced Data Structures - Complex Nested Structures
+
+print("Advanced Data Structures Example")
+print("============================================================")
+
+# Complex nested structure - database-like
+print("\n[1] User database:")
+database = {
+    "users": [
+        {
+            "id": "1",
+            "name": "Alice",
+            "email": "alice@example.com",
+            "posts": [
+                {"title": "First Post", "likes": "10"},
+                {"title": "Second Post", "likes": "25"}
+            ]
+        },
+        {
+            "id": "2",
+            "name": "Bob",
+            "email": "bob@example.com",
+            "posts": [
+                {"title": "My Story", "likes": "30"}
+            ]
+        }
+    ]
+}
+
+# Access nested data
+print("  Database created with users and posts")
+user1 = database["users"][0]
+print("  User 1:", user1["name"])
+post1 = user1["posts"][0]
+print("  First post:", post1["title"], "with", post1["likes"], "likes")
+
+# Graph-like structure
+print("\n[2] Social network graph:")
+social_graph = {
+    "Alice": ["Bob", "Charlie"],
+    "Bob": ["Alice", "David"],
+    "Charlie": ["Alice"],
+    "David": ["Bob"]
+}
+
+print("  Alice's friends:", social_graph["Alice"])
+print("  Bob's friends:", social_graph["Bob"])
+
+# Matrix operations
+print("\n[3] Matrix operations:")
+matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+
+print("  Matrix 3x3:")
+for row in matrix {
+    print("    ", row)
+}
+
+# Calculate row sums
+print("  Row sums:")
+for row in matrix {
+    row_sum = 0
+    for val in row {
+        row_sum = row_sum + val
+    }
+    print("    Sum:", row_sum)
+}
+
+# Configuration tree
+print("\n[4] Configuration tree:")
+config = {
+    "app": {
+        "name": "MyApp",
+        "version": "1.0.0"
+    },
+    "database": {
+        "host": "localhost",
+        "port": "5432"
+    },
+    "features": {
+        "auth": "enabled",
+        "cache": "enabled"
+    }
+}
+
+print("  App:", config["app"]["name"], "v", config["app"]["version"])
+print("  DB:", config["database"]["host"], ":", config["database"]["port"])
+print("  Auth feature:", config["features"]["auth"])
+
+print("\n✅ Advanced data structures complete!")

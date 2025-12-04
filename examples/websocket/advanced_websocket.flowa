@@ -1,0 +1,23 @@
+# WebSocket Chat Server
+print("Starting WebSocket Chat Server...")
+
+func chat_handler(req){
+    print("WebSocket connection request from:", req["ip"])
+    return response.text("WebSocket endpoint ready", 200)
+}
+
+func api_handler(req){
+    return response.json({"status": "API working", "connections": 0}, 200)
+}
+
+# Register routes
+http.route("GET", "/ws", chat_handler)
+http.route("GET", "/api/status", api_handler)
+
+print("WebSocket server ready!")
+print("- WebSocket endpoint: ws://localhost:8080/ws")
+print("- API endpoint: http://localhost:8080/api/status")
+print("")
+print("Open websocket_client.html in your browser to test")
+
+http.listen(8080)

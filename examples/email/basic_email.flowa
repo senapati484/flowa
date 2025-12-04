@@ -1,0 +1,23 @@
+# Basic Email - Simple Text Email
+
+print("Basic Email Example")
+print("============================================================")
+
+# Check SMTP configuration
+smtp_host = config.env("SMTP_HOST", "")
+if smtp_host == "" {
+    print("⚠️  SMTP not configured in .env file")
+    print("Add SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS to .env")
+} else {
+    print("✅ SMTP configured:", smtp_host)
+}
+
+# Send a simple text email
+email = {
+    "to": "recipient@example.com",
+    "subject": "Hello from Flowa",
+    "body": "This is a simple text email sent using the Flowa programming language!"
+}
+
+result = mail.send(email)
+print(result)

@@ -1,0 +1,33 @@
+# Flowa Example 08: File System
+# This file demonstrates the FS module:
+# - Writing files
+# - Reading files
+
+print("=== 08: File System ===\n")
+
+# 1. Writing a File
+# Use fs["write"](path, content)
+print("--- Writing File ---")
+filename = "test_output.txt"
+content = "Hello from Flowa FS module!"
+
+print("Writing to:", filename)
+fs["write"](filename, content)
+
+# 2. Reading a File
+# Use fs["read"](path)
+print("\n--- Reading File ---")
+read_content = fs["read"](filename)
+print("Read content:", read_content)
+
+# Verify content matches
+if(content == read_content){
+    print("Success: Content matches!")
+} else {
+    print("Error: Content mismatch")
+}
+
+# Cleanup (Optional - FS module doesn't have delete yet)
+# So we leave the file for inspection.
+
+print("\n✅ File System complete")

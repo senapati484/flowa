@@ -1,0 +1,20 @@
+# Test WebSocket Module
+print("Testing WebSocket Module...")
+
+# Mock websocket upgrade
+conn = websocket.upgrade()
+print("WebSocket connection:", conn)
+
+# Mock send message
+websocket.send()
+print("Message sent")
+
+# Mock read message
+message = websocket.read()
+print("Received message:", message)
+
+# Mock close connection
+websocket.close()
+print("Connection closed")
+
+print("✅ WebSocket test completed.")

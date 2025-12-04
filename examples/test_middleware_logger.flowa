@@ -1,0 +1,44 @@
+# Test Middleware - Logger Functionality
+# Tests: middleware.logger() - built-in logging middleware
+
+print("=== Testing Middleware Logger ===")
+print("This test verifies that middleware.logger() works correctly")
+print("")
+
+# Create simple route handler
+func home_handler(req) {
+    print("[HANDLER] Processing request in home_handler")
+    return response.json({"message": "Home page", "status": "ok"})
+}
+
+func api_handler(req) {
+    print("[HANDLER] Processing request in api_handler")
+    return response.json({"data": "API response", "v": 1})
+}
+
+# Test 1: Apply logger middleware globally
+print("Test 1: Registering global logger middleware")
+http.use(middleware.logger())
+print("✓ Logger middleware registered globally")
+
+# Register routes
+print("Test 2: Registering routes")
+http.route("GET", "/", home_handler)
+http.route("GET", "/api", api_handler)
+print("✓ Routes registered")
+
+print("")
+print("Server starting on port 3001...")
+print("Expected: Logger middleware should log all requests as [LOG] METHOD PATH")
+print("")
+print("Test commands:")
+print("  curl http://localhost:3001/")
+print("  curl http://localhost:3001/api")
+print("")
+print("Expected output in logs:")
+print("  [LOG] GET /")
+print("  [LOG] GET /api")
+print("===========================================")
+
+# Start server
+http.listen(3001)

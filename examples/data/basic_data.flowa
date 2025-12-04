@@ -1,0 +1,43 @@
+# Basic Data Structures - Arrays and Maps
+
+print("Basic Data Structures Example")
+print("============================================================")
+
+# Arrays
+print("\n[1] Arrays:")
+fruits = ["apple", "banana", "cherry"]
+print("  Fruits:", fruits)
+print("  First:", fruits[0])
+print("  Length:", len(fruits))
+
+# Adding to array
+more_fruits = push(fruits, "date")
+print("  After push:", more_fruits)
+
+# Numbers array
+numbers = [10, 20, 30, 40, 50]
+print("\n[2] Numbers:", numbers)
+print("  Sum:")
+sum = 0
+for num in numbers {
+    sum = sum + num
+}
+print("  Total:", sum)
+
+# Maps (dictionaries)
+print("\n[3] Maps:")
+person = {"name": "Alice", "age": "30", "city": "NYC"}
+print("  Person:", person)
+print("  Name:", person["name"])
+print("  Age:", person["age"])
+
+# Nested structures
+print("\n[4] Nested data:")
+users = [
+    {"name": "Alice", "score": "100"},
+    {"name": "Bob", "score": "85"}
+]
+print("  Users:", users)
+print("  First user:", users[0]["name"])
+
+print("\n✅ Basic data structures complete!")

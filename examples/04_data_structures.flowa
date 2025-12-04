@@ -1,0 +1,55 @@
+# Flowa Example 04: Data Structures
+# This file demonstrates arrays and maps:
+# - Array creation and indexing
+# - Map creation and key access
+# - Nested data structures
+# - Built-in len() function
+
+print("=== 04: Data Structures ===\n")
+
+# 1. Arrays
+# Ordered lists of values. Can contain mixed types.
+print("--- Arrays ---")
+numbers = [1, 2, 3, 4, 5]
+
+# Access elements using 0-based index
+first = numbers[0]
+third = numbers[2]
+print("First element:", first)    # 1
+print("Third element:", third)    # 3
+
+# Get length of array
+count = len(numbers)
+print("Array length:", count)     # 5
+
+# Arrays with strings
+fruits = ["apple", "banana", "cherry"]
+print("Second fruit:", fruits[1]) # banana
+
+# 2. Maps
+# Key-value pairs. Keys must be strings.
+# NOTE: Use single-line syntax for map literals to avoid parser issues.
+print("\n--- Maps ---")
+person = {"name": "Alice", "age": 30, "city": "NYC"}
+
+# Access values using keys
+name = person["name"]
+age = person["age"]
+print("Name:", name)              # Alice
+print("Age:", age)                # 30
+
+# 3. Nested Structures
+# Arrays inside maps, maps inside arrays, etc.
+print("\n--- Nested Structures ---")
+data = {"users": ["Alice", "Bob"], "count": 2}
+
+# Access nested elements
+first_user = data["users"][0]
+print("First user:", first_user)  # Alice
+
+# 4. Printing Complex Objects
+# NOTE: print() currently works best with primitives (strings, numbers).
+# To print arrays/maps, access their elements or use JSON encoding (see 05_modules.flowa).
+# print(numbers)  <-- Avoid this for now
+
+print("\n✅ Data Structures complete")

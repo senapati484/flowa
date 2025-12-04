@@ -1,0 +1,18 @@
+# Flowa VM Benchmark
+# Tests execution performance through iterative calculations
+
+func calculate(n){
+    result = 0
+    i = 0
+    while(i < n){
+        result = result + i
+        result = result * 2
+        result = result - result / 2
+        i = i + 1
+    }
+    return result
+}
+
+# Run benchmark
+value = calculate(1000)
+print("Result:", value)

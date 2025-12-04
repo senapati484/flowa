@@ -1,0 +1,43 @@
+# Comprehensive Loop Testing
+print("=== LOOP TESTS ===\n")
+
+# Test 1: While loop
+print("1. While Loop:")
+counter = 0
+while counter < 3 {
+    print("  counter =", counter)
+    counter = counter + 1
+}
+
+# Test 2: For-in loop
+print("\n2. For-in Loop:")
+arr = [10, 20, 30]
+for item in arr {
+    print("  item =", item)
+}
+
+# Test 3: Classic for loop
+print("\n3. Classic For Loop:")
+for(i=0; i<3; i=i+1) {
+    print("  i =", i)
+}
+
+# Test 4: Nested loops
+print("\n4. Nested Loops:")
+for(x=0; x<2; x=x+1) {
+    for(y=0; y<2; y=y+1) {
+        print("  (x,y) =", x, y)
+    }
+}
+
+# Test 5: Break statement
+print("\n5. Break in Loop:")
+for(n=0; n<10; n=n+1) {
+    if n == 3 {
+        print("  Breaking at", n)
+        break
+    }
+    print("  n =", n)
+}
+
+print("\n✅ All loop tests completed!")

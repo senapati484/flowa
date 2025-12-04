@@ -1,0 +1,16 @@
+# Test JWT Module
+print("Testing JWT Module...")
+
+# Create a JWT token (all on one line)
+payload = {"user_id": 123, "username": "alice", "role": "admin"}
+secret = "my-secret-key"
+expiry = "24h"
+
+token = jwt.sign(payload, secret, expiry)
+print("Generated token:", token)
+
+# Verify the token
+claims = jwt.verify(token, secret)
+print("Verified claims:", claims)
+
+print("✅ JWT test completed.")

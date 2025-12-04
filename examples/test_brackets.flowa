@@ -1,4 +1,0 @@
-# Test bracket access
-m = {"name": "Alice", "age": 30}
-name = m["name"]
-print(name)

@@ -31,6 +31,12 @@ const (
 	OpNotEqual
 	// OpGreaterThan compares the top two elements for greater than
 	OpGreaterThan
+	// OpLessThan compares the top two elements for less than
+	OpLessThan
+	// OpGreaterThanEqual compares the top two elements for greater than or equal
+	OpGreaterThanEqual
+	// OpLessThanEqual compares the top two elements for less than or equal
+	OpLessThanEqual
 	// OpMinus negates the top element of the stack
 	OpMinus
 	// OpBang negates the boolean value of the top element of the stack
@@ -69,6 +75,16 @@ const (
 	OpAddLocal
 	// OpJumpIfLocalGreaterEqualConst jumps if local >= const
 	OpJumpIfLocalGreaterEqualConst
+	// OpSetLocal Zero sets a local variable to 0 (optimized pattern for i = 0)
+	OpSetLocalZero
+	// OpImport imports a module
+	OpImport
+	// OpPostfixInc increments a local variable and pushes old value (i++)
+	OpPostfixInc
+	// OpPostfixDec decrements a local variable and pushes old value (i--)
+	OpPostfixDec
+	// OpDecLocal decrements a local variable by 1
+	OpDecLocal
 )
 
 type Definition struct {
@@ -88,6 +104,9 @@ var definitions = map[Opcode]*Definition{
 	OpEqual:                        {"OpEqual", []int{}},
 	OpNotEqual:                     {"OpNotEqual", []int{}},
 	OpGreaterThan:                  {"OpGreaterThan", []int{}},
+	OpLessThan:                     {"OpLessThan", []int{}},
+	OpGreaterThanEqual:             {"OpGreaterThanEqual", []int{}},
+	OpLessThanEqual:                {"OpLessThanEqual", []int{}},
 	OpMinus:                        {"OpMinus", []int{}},
 	OpBang:                         {"OpBang", []int{}},
 	OpJumpNotTruth:                 {"OpJumpNotTruth", []int{2}},
@@ -107,6 +126,11 @@ var definitions = map[Opcode]*Definition{
 	OpIncLocal:                     {"OpIncLocal", []int{1}},
 	OpAddLocal:                     {"OpAddLocal", []int{1, 1}},
 	OpJumpIfLocalGreaterEqualConst: {"OpJumpIfLocalGreaterEqualConst", []int{1, 2, 2}},
+	OpSetLocalZero:                 {"OpSetLocalZero", []int{1}},
+	OpImport:                       {"OpImport", []int{2}},
+	OpPostfixInc:                   {"OpPostfixInc", []int{1}},
+	OpPostfixDec:                   {"OpPostfixDec", []int{1}},
+	OpDecLocal:                     {"OpDecLocal", []int{1}},
 }
 
 func Lookup(op byte) (*Definition, error) {

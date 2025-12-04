@@ -362,7 +362,7 @@ Upgrade HTTP connection to WebSocket.
 **Returns:** Connection object or None (upgrade failed)
 
 ```python
-def wsHandler(req):
+func wsHandler(req){
     conn = websocket.upgrade(req)
     if conn == None:
         return response.text("Upgrade failed", 500)
@@ -511,13 +511,13 @@ get "/api/data" -> handler, [cors, auth]
 ```python
 users = {}
 
-def register(req):
+func register(req){
     data = json.decode(req.body)
     hash = auth.hash_password(data["password"])
     users[data["username"]] = hash
     return response.json({"message": "Registered"}, 201)
 
-def login(req):
+func login(req){
     data = json.decode(req.body)
     hash = users[data["username"]]
     if auth.verify_password(hash, data["password"]):
@@ -533,7 +533,7 @@ service AuthAPI on ":8080":
 ### WebSocket Chat
 
 ```python
-def chat(req):
+func chat(req){
     conn = websocket.upgrade(req)
     websocket.send(conn, "Welcome!")
     

@@ -1,0 +1,5 @@
+print("Testing HTTP client in VM mode...")
+resp = http.get("https://httpbin.org/status/200")
+print("HTTP GET Status:", resp["status"])
+
+print("HTTP client works in VM! ✅")

@@ -1,0 +1,45 @@
+# Basic Functions - Definition and Calls
+
+print("Basic Functions Example")
+print("============================================================")
+
+# Simple function
+func greet(name) {
+    return "Hello, " + name + "!"
+}
+
+# Function with calculation
+func add(a, b) {
+    return a + b
+}
+
+# Function with multiple statements
+func calculate_area(width, height) {
+    area = width * height
+    print("  Calculating area:", width, "x", height, "=", area)
+    return area
+}
+
+# Test the functions
+print("\n[1] Greeting function:")
+message = greet("Alice")
+print(message)
+
+print("\n[2] Addition function:")
+sum = add(10, 5)
+print("  10 + 5 =", sum)
+
+print("\n[3] Area calculation:")
+result = calculate_area(5, 3)
+print("  Result:", result)
+
+# Function without return value
+func print_info(name, age) {
+    print("  Name:", name)
+    print("  Age:", age)
+}
+
+print("\n[4] Info function:")
+print_info("Bob", 25)
+
+print("\n✅ Basic functions complete!")

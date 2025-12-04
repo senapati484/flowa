@@ -1,0 +1,99 @@
+# Advanced HTTP Server - REST API with Middleware
+
+print("Advanced HTTP REST API Server")
+print("Starting server on http://localhost:8080")
+print("============================================================")
+print("Endpoints:")
+print("  GET    /api/users      - List all users")
+print("  GET    /api/users/:id  - Get user by ID")
+print("  POST   /api/users      - Create new user")
+print("  PUT    /api/users/:id  - Update user")
+print("  DELETE /api/users/:id  - Delete user")
+print("============================================================")
+
+# In-memory database (using string IDs for simplicity)
+user1 = {"id": "1", "name": "Alice", "email": "alice@example.com"}
+user2 = {"id": "2", "name": "Bob", "email": "bob@example.com"}
+users = {"1": user1, "2": user2}
+
+
+# Middleware: Logger
+func logger_middleware(req, next) {
+    print("[LOG]", req["method"], req["path"])
+    return next()
+}
+
+# Middleware: Auth check
+func auth_middleware(req, next) {
+    # In real app, check Authorization header
+    print("[AUTH] Request authenticated")
+    return next()
+}
+
+# GET /api/users - List all users
+func list_users(req) {
+    return response.json(users)
+}
+
+# GET /api/users/:id - Get user by ID
+func get_user(req) {
+    user_id = req["params"]["id"]
+    user = users[user_id]
+    
+    if user != nil {
+        return response.json(user)
+    } else {
+        error = {"error": "User not found"}
+        return response.json(error, 404)
+    }
+}
+
+# POST /api/users - Create user
+func create_user(req) {
+    # In real app, parse req["body"]
+    new_id = "3"
+    new_user = {"id": 3, "name": "Charlie", "email": "charlie@example.com"}
+    
+    # Add to database
+    # users[new_id] = new_user (map assignment would go here)
+    
+    return response.json(new_user, 201)
+}
+
+# PUT  /api/users/:id - Update user
+func update_user(req) {
+    user_id = req["params"]["id"]
+    result = {"message": "User updated", "id": user_id}
+    return response.json(result)
+}
+
+# DELETE /api/users/:id - Delete user
+func delete_user(req) {
+    user_id = req["params"]["id"]
+    result = {"message": "User deleted", "id": user_id}
+    return response.json(result)
+}
+
+# Health check endpoint
+func health_check(req) {
+    health = {"status": "healthy", "uptime": "running", "users_count": "2"}
+    return response.json(health)
+}
+
+# Apply global middleware (using VM builtin middleware module)
+http.use(middleware.logger())
+http.use(middleware.cors())
+
+# Register API routes
+http.route("GET", "/api/users", list_users)
+http.route("GET", "/api/users/:id", get_user)
+http.route("POST", "/api/users", create_user)
+http.route("PUT", "/api/users/:id", update_user)
+http.route("DELETE", "/api/users/:id", delete_user)
+
+# Health check
+http.route("GET", "/health", health_check)
+
+# Start the server
+print("\n✅ Server starting...")
+http.listen(8080)

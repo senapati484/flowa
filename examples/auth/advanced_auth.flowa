@@ -1,0 +1,62 @@
+# Advanced Authentication - Full Login System with JWT
+
+print("Advanced Authentication & JWT System")
+print("============================================================")
+
+# Simulated user database
+users = {
+    "alice": "hashed_password123",
+    "bob": "hashed_securepass456"
+}
+
+# Function to register new user
+func register(username, password) {
+    hashed = auth.hash_password(password)
+    print("User registered:", username)
+    return hashed
+}
+
+# Function to login
+func login(username, password, stored_hash) {
+    if auth.verify_password(password, stored_hash) == true {
+        # Create JWT token
+        payload = {"user": username, "role": "user", "timestamp": "2025-01-01"}
+        secret = "my_app_secret_key_12345"
+        token = jwt.sign(payload, secret, "24h")
+        
+        print("✅ Login successful!")
+        print("JWT Token:", token)
+        return token
+    } else {
+        print("❌ Login failed - invalid credentials")
+        return nil
+    }
+}
+
+# Function to verify token
+func verify_token(token, secret) {
+    claims = jwt.verify(token, secret)
+    if claims != nil {
+        print("✅ Token valid - User:", claims["user"])
+        return claims
+    } else {
+        print("❌ Token invalid or expired")
+        return nil
+    }
+}
+
+# Test the system
+print("\n[1] Register new user")
+user_hash = register("charlie", "superSecret789")
+
+print("\n[2] Login with correct credentials")
+token = login("charlie", "superSecret789", user_hash)
+
+print("\n[3] Verify JWT token")
+secret = "my_app_secret_key_12345"
+claims = verify_token(token, secret)
+
+print("\n[4] Try invalid token")
+verify_token("invalid.token.here", secret)
+
+print("\n✅ Authentication system demo complete!")

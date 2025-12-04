@@ -1,0 +1,31 @@
+# Basic HTTP Server - Simple Routes
+
+print("Basic HTTP Server Example")
+print("Starting server on http://localhost:8080")
+print("Try: curl http://localhost:8080/")
+print("Try: curl http://localhost:8080/hello")
+print("============================================================")
+
+# Define a simple home route
+func home_handler(req) {
+    return response.text("Welcome to Flowa HTTP Server!")
+}
+
+# Define a hello route
+func hello_handler(req) {
+    return response.text("Hello, World!")
+}
+
+# Define a JSON route
+func api_handler(req) {
+    data = {"message": "API response", "status": "ok", "version": "1.0"}
+    return response.json(data)
+}
+
+# Register routes
+http.route("GET", "/", home_handler)
+http.route("GET", "/hello", hello_handler)
+http.route("GET", "/api", api_handler)
+
+# Start server
+http.listen(8080)

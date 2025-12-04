@@ -5,13 +5,14 @@ import (
 	"testing"
 )
 
-func TestFunctions(t *testing.T) {
+func TestSimpleFunction(t *testing.T) {
 	tests := []compilerTestCase{
 		{
 			input: `
-def add(a, b):
-    return a + b
-add(1, 2)
+func add(a, b){
+	return a + b
+}
+add(2, 3)
 `,
 			expectedConstants: []interface{}{
 				[]opcode.Instructions{
@@ -20,13 +21,13 @@ add(1, 2)
 					opcode.Make(opcode.OpAdd),
 					opcode.Make(opcode.OpReturnValue),
 				},
-				1,
 				2,
+				3,
 			},
 			expectedInstructions: []opcode.Instructions{
 				opcode.Make(opcode.OpConstant, 0),
-				opcode.Make(opcode.OpSetLocal, 0),
-				opcode.Make(opcode.OpGetLocal, 0),
+				opcode.Make(opcode.OpSetGlobal, 0),
+				opcode.Make(opcode.OpGetGlobal, 0),
 				opcode.Make(opcode.OpConstant, 1),
 				opcode.Make(opcode.OpConstant, 2),
 				opcode.Make(opcode.OpCall, 2),

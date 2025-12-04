@@ -7,8 +7,9 @@ Complete guide to the Flowa programming language.
 ## Table of Contents
 
 1. [Language Basics](#language-basics)
-2. [⚡ Performance Builtins](#️-performance-builtins)
-3. [🌐 HTTP Server](#-http-server)
+2. [🚀 Performance & VM](#-performance--vm)
+3. [⚡ Performance Builtins](#️-performance-builtins)
+4. [🌐 HTTP Server](#-http-server)
 4. [🔐 Authentication](#-authentication)
 5. [🎫 JWT Tokens](#-jwt-tokens)
 6. [🔌 WebSockets](#-websockets)
@@ -69,12 +70,14 @@ user = {"name": "Alice", "age": 30, "role": "admin"}
 
 ```python
 # Basic function
-def add(x, y):
+func add(x, y){
     return x + y
+}
 
 # Function with default return
-def greet(name):
+func greet(name){
     return "Hello, " + name
+}
 
 # Call functions
 result = add(5, 10)  # 15
@@ -86,14 +89,17 @@ message = greet("World")  # "Hello, World"
 The pipeline operator passes the left value as the **first argument** to the right function.
 
 ```python
-def increment(x):
+func increment(x){
     return x + 1
+}
 
-def square(x):
+func square(x){
     return x * x
+}
 
-def double(x):
+func double(x){
     return x * 2
+}
 
 # Traditional nested calls
 result = double(square(increment(5)))  # 72
@@ -105,11 +111,13 @@ result = 5 |> increment() |> square() |> double()  # 72
 **With multiple arguments:**
 
 ```python
-def add(x, y):
+func add(x, y){
     return x + y
+}
 
-def multiply(x, factor):
+func multiply(x, factor){
     return x * factor
+}
 
 # Pipeline passes value as first argument
 result = 5 |> add(10) |> multiply(2)
@@ -121,25 +129,29 @@ result = 5 |> add(10) |> multiply(2)
 
 ```python
 # If-elif-else
-if score >= 90:
+if(score >= 90){
     grade = "A"
-elif score >= 80:
+} elif(score >= 80){
     grade = "B"
-else:
+} else{
     grade = "C"
+}
 
 # While loops
 count = 0
-while count < 5:
+while(count < 5){
     print(count)
     count = count + 1
+}
 
 # For loops
-for item in [1, 2, 3, 4, 5]:
+for item in [1, 2, 3, 4, 5]{
     print(item)
+}
 
-for name in ["Alice", "Bob", "Charlie"]:
+for name in ["Alice", "Bob", "Charlie"]{
     print("Hello, " + name)
+}
 ```
 
 ### Array & Map Access
@@ -166,8 +178,9 @@ Split your code into multiple files.
 
 ```python
 # math_utils.flowa
-def add(a, b):
+func add(a, b){
     return a + b
+}
 
 PI = 3.14159
 ```
@@ -194,6 +207,32 @@ import { add, PI } from "math_utils.flowa"
 
 ---
 
+## 🚀 Performance & VM
+
+Flowa runs on a high-performance, register-based Virtual Machine (VM) written in Go.
+
+### Key Features
+
+- **Optimized VM Architecture**: Uses a custom bytecode instruction set designed for speed.
+- **Instance Pooling**: The VM and Compiler use `sync.Pool` to eliminate allocation overhead during execution.
+- **Integer Caching**: Integers from -4096 to 4096 are cached, making loop counters and common arithmetic zero-allocation.
+- **Specialized Opcodes**: Common operations like `i = i + 1` and `sum = sum + i` compile to single, highly-optimized instructions.
+
+### Performance Tips
+
+1. **Use Local Variables**: Local variables are significantly faster than globals.
+2. **Prefer Integers**: Integer arithmetic is heavily optimized.
+3. **Pipeline Operator**: Pipelines compile to efficient nested calls with no runtime overhead.
+
+### Benchmarks
+
+Flowa is designed to be competitive with other interpreted languages.
+
+- **100M Iteration Loop**: ~4.2 seconds
+- **VM Startup**: < 1ms (due to pooling)
+
+---
+
 ## 🌐 HTTP Server
 
 Build HTTP servers with clean syntax and powerful built-in features.
@@ -201,12 +240,14 @@ Build HTTP servers with clean syntax and powerful built-in features.
 ### Basic Server
 
 ```python
-def homepage(req):
+func homepage(req){
     return response.text("Welcome to Flowa!", 200)
+}
 
-def about(req):
+func about(req){
     html = "<h1>About Us</h1><p>Built with Flowa</p>"
     return response.html(html, 200)
+}
 
 # Register routes
 route("GET", "/", homepage)
@@ -228,7 +269,7 @@ flowa server.flowa
 The `req` parameter contains all request information:
 
 ```python
-def handle_request(req):
+func handle_request(req){
     # HTTP method
     method = req.method  # "GET", "POST", etc.
 
@@ -256,22 +297,25 @@ def handle_request(req):
     ip = req.ip
 
     return response.json({"status": "ok"}, 200)
+}
 ```
 
 ### Path Parameters
 
 ```python
-def get_user(req):
+func get_user(req){
     user_id = req.params["id"]
     return response.json({"user_id": user_id}, 200)
+}
 
-def get_comment(req):
+func get_comment(req){
     post_id = req.params["post_id"]
     comment_id = req.params["comment_id"]
     return response.json({
         "post": post_id,
         "comment": comment_id
     }, 200)
+}
 
 service API on ":8080":
     get "/users/:id" -> get_user
@@ -320,7 +364,7 @@ response.json({"error": "Server error"}, 500)
 ### Handling POST Data
 
 ```python
-def create_user(req):
+func create_user(req){
     # Parse JSON body
     data = json.decode(req.body)
     username = data["username"]
@@ -332,6 +376,7 @@ def create_user(req):
         "message": "User created",
         "username": username
     }, 201)
+}
 
 # Register route
 route("POST", "/users", create_user)
@@ -377,10 +422,11 @@ users["alice"] = hash
 stored_hash = users["alice"]
 password_attempt = "mysecretpassword123"
 
-if auth.verify_password(stored_hash, password_attempt):
+if(auth.verify_password(stored_hash, password_attempt)){
     print("Login successful!")
-else:
+} else{
     print("Invalid password")
+}
 ```
 
 ### Complete Registration & Login Example
@@ -389,36 +435,41 @@ else:
 # In-memory user database
 users = {}
 
-def register(req):
+func register(req){
     data = json.decode(req.body)
     username = data["username"]
     password = data["password"]
 
     # Check if user exists
-    if username in users:
+    if(username in users){
         return response.json({"error": "User already exists"}, 400)
+    }
 
     # Hash password and store
     hash = auth.hash_password(password)
     users[username] = hash
 
     return response.json({"message": "Registration successful"}, 201)
+}
 
-def login(req):
+func login(req){
     data = json.decode(req.body)
     username = data["username"]
     password = data["password"]
 
     # Check if user exists
-    if username not in users:
+    if(username not in users){
         return response.json({"error": "Invalid credentials"}, 401)
+    }
 
     # Verify password
     hash = users[username]
-    if auth.verify_password(hash, password):
+    if(auth.verify_password(hash, password)){
         return response.json({"message": "Login successful"}, 200)
-    else:
+    } else{
         return response.json({"error": "Invalid credentials"}, 401)
+    }
+}
 
 service AuthAPI on ":8080":
     post "/register" -> register
@@ -480,15 +531,16 @@ token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 claims = jwt.verify(token, secret)
 
-if claims != None:
+if(claims != None){
     # Token is valid
     user_id = claims["user_id"]
     username = claims["username"]
     role = claims["role"]
     print("Authenticated as:", username)
-else:
+} else{
     # Token is invalid or expired
     print("Authentication failed")
+}
 ```
 
 ### Login with JWT
@@ -496,13 +548,13 @@ else:
 ```python
 users = {}
 
-def register(req):
+func register(req){
     data = json.decode(req.body)
     hash = auth.hash_password(data["password"])
     users[data["username"]] = hash
     return response.json({"message": "Registered"}, 201)
 
-def login(req):
+func login(req){
     data = json.decode(req.body)
     username = data["username"]
 
@@ -530,7 +582,7 @@ service AuthAPI on ":8080":
 ### Protected Routes
 
 ```python
-def get_profile(req):
+func get_profile(req){
     # Extract token from Authorization header
     auth_header = req.headers["authorization"]
 
@@ -580,31 +632,35 @@ Real-time bidirectional communication.
 ### Basic WebSocket Server
 
 ```python
-def ws_handler(req):
+func ws_handler(req){
     # Upgrade HTTP connection to WebSocket
     conn = websocket.upgrade(req)
 
-    if conn == None:
+    if(conn == None){
         return response.text("WebSocket upgrade failed", 500)
+    }
 
     # Send welcome message
     websocket.send(conn, "Connected to Flowa WebSocket!")
 
     # Read-echo loop
-    while True:
+    while(True){
         msg = websocket.read(conn)
 
-        if msg == None:
+        if(msg == None){
             # Client disconnected
             print("Client disconnected")
             break
+        }
 
         print("Received:", msg)
         websocket.send(conn, "Echo: " + msg)
+    }
 
     # Clean up
     websocket.close(conn)
-    return None  # Response handled by WebSocket
+    return None # Response handled by WebSocket
+}
 
 service ChatServer on ":8080":
     get "/ws" -> ws_handler
@@ -633,7 +689,7 @@ service ChatServer on ":8080":
 # Simple chat with broadcast
 connections = []
 
-def chat_handler(req):
+func chat_handler(req){
     conn = websocket.upgrade(req)
     if conn == None:
         return response.text("Failed", 500)
@@ -750,7 +806,7 @@ mail.send_template(template, {
 ### Registration Email Example
 
 ```python
-def send_welcome_email(username, email):
+func send_welcome_email(username, email){
     # Get SMTP credentials from environment
     smtp_host = config.env("SMTP_HOST", "")
     smtp_user = config.env("SMTP_USER", "")
@@ -773,7 +829,7 @@ The Team
     mail_data = {"to": email, "from": smtp_user, "subject": "Welcome to Our Platform", "username": username}
     mail.send_template(template, mail_data)
 
-def register(req):
+func register(req){
     data = json.decode(req.body)
     username = data["username"]
     email = data["email"]
@@ -867,8 +923,9 @@ fs.write("output.txt", "Hello World")
 fs.append("log.txt", "New log entry\n")
 
 # Check if file exists
-if fs.exists("config.json"):
+if(fs.exists("config.json")){
     print("Config found")
+}
 
 # Remove a file
 fs.remove("temp.txt")
@@ -908,7 +965,7 @@ resp = http.post(
     headers
 )
 
-if resp.status == 201:
+if(resp.status == 201){
     print("Created!")
     result = json.decode(resp.body)
     print("ID:", result["id"])
@@ -1018,7 +1075,7 @@ service API on ":8080":
 ```python
 users = {}
 
-def register(req):
+func register(req){
     data = json.decode(req.body)
     username = data["username"]
     email = data["email"]
@@ -1039,7 +1096,7 @@ def register(req):
 
     return response.json({"message": "Registered"}, 201)
 
-def login(req):
+func login(req){
     data = json.decode(req.body)
     username = data["username"]
     password = data["password"]
@@ -1054,7 +1111,7 @@ def login(req):
 
     return response.json({"token": token}, 200)
 
-def get_profile(req):
+func get_profile(req){
     token = req.headers["authorization"]
     claims = jwt.verify(token, "secret")
 
@@ -1078,7 +1135,7 @@ service AuthAPI on ":8080":
 ### Real-time Chat with Auth
 
 ```python
-def chat_handler(req):
+func chat_handler(req){
     # Verify JWT before upgrading
     token = req.query["token"]
     claims = jwt.verify(token, "secret")
@@ -1142,9 +1199,10 @@ print(total)  # 49999995000000
 ```python
 sum = 0
 i = 0
-while i < n:
+while(i < n){
     sum = sum + i
     i = i + 1
+}
 ```
 
 For benchmarks like the intensive loop in `examples/benchmark_test`, prefer:
@@ -1186,7 +1244,7 @@ Call a function or builtin `fn(i)` **n times**, with a native loop managing
 the counter.
 
 ```python
-def work(i):
+func work(i){
     # lightweight, side-effecting work
     print(i)
 
@@ -1228,21 +1286,16 @@ Combined with `fast_sum_to`, you can write Go-style numeric benchmarks:
 print("Starting intensive benchmark...")
 
 run = 0
-while run < 5:
+while(run < 5){  
     start = time.now_ms()
 
     sum = fast_sum_to(100000000)
 
-    elapsed_ms = time.since_ms(start)
-
-    print("Run:")
-    print(run + 1)
-    print("Sum:")
-    print(sum)
-    print("Time (ms):")
-    print(elapsed_ms)
+    elapsed = time.since_s(start, 3)
+    print("Run:", run + 1, "Sum:", sum, "Time:", elapsed, "s")
 
     run = run + 1
+}
 
 print("Benchmark complete!")
 ```

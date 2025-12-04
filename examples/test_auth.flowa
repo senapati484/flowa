@@ -1,34 +1,17 @@
-# Test Auth and JWT Modules
+# Test Auth Module
+print("Testing Auth Module...")
 
-print("=== Testing Auth Module ===")
-password = "mysecretpassword"
-print("Password:", password)
+# Test password hashing
+password = "mySecurePassword123"
+hashed = auth.hash_password(password)
+print("Hashed password:", hashed)
 
-# 1. Hash Password
-hash = auth.hash_password(password)
-print("Hash:", hash)
+# Test password verification - correct password
+is_valid = auth.verify_password(hashed, password)
+print("Password verification (correct):", is_valid)
 
-# 2. Verify Password
-valid = auth.verify_password(hash, password)
-print("Verify correct:", valid)
+# Test password verification - wrong password
+is_invalid = auth.verify_password(hashed, "wrongPassword")
+print("Password verification (wrong):", is_invalid)
 
-invalid = auth.verify_password(hash, "wrongpassword")
-print("Verify incorrect:", invalid)
-
-print("\n=== Testing JWT Module ===")
-secret = "supersecretkey"
-payload = {"user_id": 123, "role": "admin"}
-
-# 1. Sign Token
-token = jwt.sign(payload, secret, "1h")
-print("Token:", token)
-
-# 2. Verify Token
-claims = jwt.verify(token, secret)
-print("Claims:", claims)
-print("User ID:", claims["user_id"])
-print("Role:", claims["role"])
-
-# 3. Verify Invalid Token
-invalid_claims = jwt.verify(token, "wrongsecret")
-print("Invalid Claims (should be null):", invalid_claims)
+print("✅ Auth test completed.")

@@ -1,0 +1,53 @@
+# Flowa Example 02: Control Flow
+# This file demonstrates how to control the flow of execution:
+# - If/Elif/Else conditionals
+# - While loops
+# - For loops (iterating over arrays)
+
+print("=== 02: Control Flow ===\n")
+
+# 1. Conditionals (If/Elif/Else)
+# Use if/elif/else to execute code based on conditions.
+# Conditions must be in parentheses ().
+# Blocks must be enclosed in curly braces {}.
+print("--- Conditionals ---")
+score = 85
+
+if(score >= 90){
+    print("Grade: A")
+} elif(score >= 80){
+    print("Grade: B")      # This will execute
+} else{
+    print("Grade: C")
+}
+
+# 2. While Loops
+# Execute a block of code while a condition is true.
+print("\n--- While Loop ---")
+count = 5
+while(count > 0){
+    print("Countdown:", count)
+    count = count - 1
+}
+print("Liftoff!")
+
+# 3. For Loops
+# Iterate over elements in an array.
+# Syntax: for item in collection { ... }
+print("\n--- For Loop ---")
+fruits = ["apple", "banana", "cherry"]
+
+for fruit in fruits{
+    print("Fruit:", fruit)
+}
+
+# 4. Nested Loops
+# Loops can be nested inside each other.
+print("\n--- Nested Loops ---")
+for i in [1, 2]{
+    for j in [10, 20]{
+        print("i:", i, "j:", j)
+    }
+}
+
+print("\n✅ Control Flow complete")

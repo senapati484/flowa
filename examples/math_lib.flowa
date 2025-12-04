@@ -1,0 +1,12 @@
+# Test Module for Import
+print("Module 'math_lib' loaded!")
+
+func add(a, b) {
+    return a + b
+}
+
+func multiply(a, b) {
+    return a * b
+}
+
+PI = 3

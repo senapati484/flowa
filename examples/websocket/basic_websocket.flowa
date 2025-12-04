@@ -1,0 +1,43 @@
+# WebSocket Echo Server with Real Upgrade
+print("Starting WebSocket Echo Server...")
+
+func ws_handler(req){
+    print("WebSocket upgrade request from:", req["ip"])
+    
+    # Perform WebSocket upgrade using real gorilla/websocket
+    conn = websocket.upgrade(req)
+    
+    print("WebSocket connection established!")
+    websocket.send(conn, "Welcome to Flowa WebSocket Server!")
+    
+    # Echo loop - read and send back messages
+    while(True){
+        msg = websocket.read(conn)
+        if(msg == nil){
+            print("Client disconnected")
+            break
+        }
+        print("Received:", msg)
+        websocket.send(conn, "Echo: " + msg)
+    }
+    
+    websocket.close(conn)
+    print("Connection closed")
+    
+    return nil
+}
+
+func api_status(req){
+    return response.json({"status": "running", "version": "1.0"}, 200)
+}
+
+# Register routes
+http.route("GET", "/ws", ws_handler)
+http.route("GET", "/api/status", api_status)
+
+print("Server ready on port 8080")
+print("- WebSocket: ws://localhost:8080/ws")
+print("- API Status: http://localhost:8080/api/status")
+print("Open websocket_client.html to test!")
+
+http.listen(8080)

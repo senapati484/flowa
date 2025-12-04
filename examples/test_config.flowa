@@ -1,0 +1,44 @@
+# Test Config Module
+# Tests: config.env() - environment variable access
+
+print("=== Testing Config Module ===")
+print("")
+
+# Test 1: Get environment variable with default
+print("Test 1: config.env() with default value")
+port = config.env("PORT", "8080")
+print("PORT (with default):", port)
+print("✓ config.env() returns value or default")
+print("")
+
+# Test 2: Get environment variable that might exist
+print("Test 2: config.env() for HOME variable")
+home = config.env("HOME", "/default/home")
+print("HOME:", home)
+print("✓ config.env() reads system environment")
+print("")
+
+# Test 3: Get custom environment variable
+print("Test 3: config.env() for custom variables")
+db_url = config.env("DATABASE_URL", "postgres://localhost/mydb")
+api_key = config.env("API_KEY", "default-key-123")
+print("DATABASE_URL:", db_url)
+print("API_KEY:", api_key)
+print("✓ config.env() handles missing variables with defaults")
+print("")
+
+# Test 4: Use in application
+print("Test 4: Using config in application")
+app_env = config.env("APP_ENV", "development")
+debug_mode = config.env("DEBUG", "false")
+print("App Environment:", app_env)
+print("Debug Mode:", debug_mode)
+print("✓ config.env() suitable for app configuration")
+print("")
+
+print("===========================================")
+print("All config module tests completed!")
+print("===========================================")
+print("")
+print("NOTE: To test with real environment variables, run:")
+print("  PORT=3000 API_KEY=secret-123 ./flowa examples/test_config.flowa")

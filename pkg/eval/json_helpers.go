@@ -5,7 +5,7 @@ import (
 )
 
 // Helper to convert Flowa objects to native Go types for JSON marshaling
-func flowaToNative(obj Object) interface{} {
+func FlowaToNative(obj Object) interface{} {
 	switch obj := obj.(type) {
 	case *Integer:
 		return obj.Value
@@ -18,7 +18,7 @@ func flowaToNative(obj Object) interface{} {
 	case *Array:
 		result := make([]interface{}, 0, len(obj.Elements))
 		for _, elem := range obj.Elements {
-			result = append(result, flowaToNative(elem))
+			result = append(result, FlowaToNative(elem))
 		}
 		return result
 	case *Map:
@@ -28,13 +28,13 @@ func flowaToNative(obj Object) interface{} {
 			if s, ok := k.(*String); ok {
 				keyStr = s.Value
 			}
-			result[keyStr] = flowaToNative(v)
+			result[keyStr] = FlowaToNative(v)
 		}
 		return result
 	case *StructInstance:
 		result := make(map[string]interface{})
 		for k, v := range obj.Fields {
-			result[k] = flowaToNative(v)
+			result[k] = FlowaToNative(v)
 		}
 		return result
 	default:
@@ -43,7 +43,7 @@ func flowaToNative(obj Object) interface{} {
 }
 
 // Helper to convert native Go types to Flowa objects after JSON unmarshaling
-func nativeToFlowa(val interface{}) Object {
+func NativeToFlowa(val interface{}) Object {
 	switch v := val.(type) {
 	case nil:
 		return NULL
@@ -63,13 +63,13 @@ func nativeToFlowa(val interface{}) Object {
 	case []interface{}:
 		elements := make([]Object, 0, len(v))
 		for _, e := range v {
-			elements = append(elements, nativeToFlowa(e))
+			elements = append(elements, NativeToFlowa(e))
 		}
 		return &Array{Elements: elements}
 	case map[string]interface{}:
 		pairs := make(map[Object]Object)
 		for k, val := range v {
-			pairs[&String{Value: k}] = nativeToFlowa(val)
+			pairs[&String{Value: k}] = NativeToFlowa(val)
 		}
 		return &Map{Pairs: pairs}
 	default:

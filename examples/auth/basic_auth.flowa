@@ -1,0 +1,26 @@
+# Basic Authentication - Password Hashing
+
+print("Basic Authentication Example")
+print("=" + "=" + "=" + "=" + "=" + "=" + "=" + "=" +"=" + "=")
+
+# Hash a password
+password = "mySecurePassword123"
+hashed = auth.hash_password(password)
+
+print("Original password:", password)
+print("Hashed password:", hashed)
+
+# Verify correct password
+if auth.verify_password(hashed, password) == true {
+    print("✅ Password verified successfully!")
+} else {
+    print("❌ Password verification failed")
+}
+
+# Try wrong password
+wrong =  "wrongPassword"
+if auth.verify_password(hashed, wrong) == false {
+    print("✅ Wrong password correctly rejected")
+} else {
+    print("❌ Security issue - wrong password accepted!")
+}

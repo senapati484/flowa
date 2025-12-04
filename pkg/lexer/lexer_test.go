@@ -6,30 +6,31 @@ import (
 )
 
 func TestNextToken(t *testing.T) {
-	input := `def add(x, y):
-    return x + y
+	input := `func add(x, y){
+return x + y
+}
 `
 
 	tests := []struct {
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
-		{token.DEF, "def"},
+		{token.FUNC, "func"},
 		{token.IDENT, "add"},
 		{token.LPAREN, "("},
 		{token.IDENT, "x"},
 		{token.COMMA, ","},
 		{token.IDENT, "y"},
 		{token.RPAREN, ")"},
-		{token.COLON, ":"},
+		{token.LBRACE, "{"},
 		{token.NEWLINE, "\n"},
-		{token.INDENT, ""},
 		{token.RETURN, "return"},
 		{token.IDENT, "x"},
 		{token.PLUS, "+"},
 		{token.IDENT, "y"},
 		{token.NEWLINE, "\n"},
-		{token.DEDENT, ""},
+		{token.RBRACE, "}"},
+		{token.NEWLINE, "\n"},
 		{token.EOF, ""},
 	}
 

@@ -1,0 +1,13 @@
+# Simple HTTP server test
+print("Starting simple HTTP server...")
+
+func hello_handler(req) {
+    return {"status": 200, "body": "Hello from VM!"}
+}
+
+http.route("GET", "/hello", hello_handler)
+
+print("Server configured. Starting on :8081...")
+print("Test: curl http://localhost:8081/hello")
+
+http.listen(8081)

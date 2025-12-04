@@ -1,0 +1,35 @@
+# Flowa Example 06: HTTP Client
+# This file demonstrates the HTTP module:
+# - Making GET requests
+# - Handling responses
+# - Accessing status code and body
+
+print("=== 06: HTTP Client ===\n")
+
+# 1. Making a GET Request
+# Use http["get"](url) to fetch data.
+# Returns a map with "status" (int) and "body" (string).
+
+url = "https://httpbin.org/get"
+print("Fetching URL:", url)
+
+# Note: This requires internet connection
+# We wrap it in a try/catch block if we had one, but for now we just call it.
+# If it fails (e.g. no network), the VM returns an error object.
+
+response = http["get"](url)
+
+# 2. Handling the Response
+# Check if we got a valid response (map) or error
+# In this simple example, we assume success if it returns a map.
+
+print("Status Code:", response["status"])
+# print("Body:", response["body"]) # Body might be large
+
+# 3. Parsing JSON Response
+# Often APIs return JSON, so we can combine with the json module.
+
+# body_json = json["decode"](response["body"])
+# print("Origin IP:", body_json["origin"])
+
+print("\n✅ HTTP Client complete")

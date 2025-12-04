@@ -7,6 +7,7 @@ type ObjectKind uint8
 const (
 	KindInvalid ObjectKind = iota
 	KindInteger
+	KindFloat
 	KindString
 	KindBoolean
 	KindNull
@@ -26,6 +27,8 @@ func (k ObjectKind) String() string {
 	switch k {
 	case KindInteger:
 		return "INTEGER"
+	case KindFloat:
+		return "FLOAT"
 	case KindString:
 		return "STRING"
 	case KindBoolean:
@@ -57,15 +60,17 @@ func (k ObjectKind) String() string {
 	}
 }
 
-// Integer cache for small integers (-128 to 127)
+// Integer cache for common integers (-4096 to 4096)
+// Expanded from [-128, 127] to reduce allocations for loop counters
+// and common numeric values. Uses ~66KB of memory.
 const (
-	minCachedInt = -128
-	maxCachedInt = 127
-	intCacheSize = maxCachedInt - minCachedInt + 1
+	MinCachedInt = -4096
+	MaxCachedInt = 4096
+	intCacheSize = MaxCachedInt - MinCachedInt + 1
 )
 
 var (
-	intCache [intCacheSize]*Integer
+	IntCache [intCacheSize]*Integer // Exported for VM inlining
 
 	NULL  *Null
 	TRUE  *Boolean
@@ -121,7 +126,7 @@ func GetInternedID(id string) uint32 {
 // Initialize the integer cache and common singletons
 func init() {
 	for i := 0; i < intCacheSize; i++ {
-		intCache[i] = &Integer{Value: int64(i) + minCachedInt, kind: KindInteger}
+		IntCache[i] = &Integer{Value: int64(i) + MinCachedInt, kind: KindInteger}
 	}
 
 	NULL = &Null{kind: KindNull}
@@ -133,8 +138,8 @@ func init() {
 
 // NewInteger returns a cached integer for small values or allocates a new one.
 func NewInteger(value int64) *Integer {
-	if value >= minCachedInt && value <= maxCachedInt {
-		return intCache[value-minCachedInt]
+	if value >= MinCachedInt && value <= MaxCachedInt {
+		return IntCache[value-MinCachedInt]
 	}
 	return &Integer{Value: value, kind: KindInteger}
 }

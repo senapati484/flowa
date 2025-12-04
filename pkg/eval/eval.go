@@ -39,6 +39,14 @@ func (i *Integer) Kind() ObjectKind {
 }
 func (i *Integer) Inspect() string { return fmt.Sprintf("%d", i.Value) }
 
+type Float struct {
+	Value float64
+	kind  ObjectKind
+}
+
+func (f *Float) Kind() ObjectKind { return KindFloat }
+func (f *Float) Inspect() string  { return fmt.Sprintf("%g", f.Value) }
+
 type String struct {
 	Value string
 	kind  ObjectKind
@@ -77,11 +85,15 @@ type Array struct {
 
 func (a *Array) Kind() ObjectKind { return KindArray }
 func (a *Array) Inspect() string {
-	var out []string
-	for _, e := range a.Elements {
-		out = append(out, e.Inspect())
+	var elements []string
+	for _, elem := range a.Elements {
+		if elem == nil {
+			elements = append(elements, "nil")
+		} else {
+			elements = append(elements, elem.Inspect())
+		}
 	}
-	return "[" + strings.Join(out, ", ") + "]"
+	return "[" + strings.Join(elements, ", ") + "]"
 }
 
 type ReturnValue struct {
@@ -422,7 +434,7 @@ func NewEnvironment() *Environment {
 					if len(args) != 1 {
 						return newError("wrong number of arguments. got=%d, want=1", len(args))
 					}
-					native := flowaToNative(args[0])
+					native := FlowaToNative(args[0])
 					bytes, err := json.Marshal(native)
 					if err != nil {
 						return newError("json encode error: %s", err)
@@ -443,7 +455,7 @@ func NewEnvironment() *Environment {
 					if err != nil {
 						return newError("json decode error: %s", err)
 					}
-					return nativeToFlowa(native)
+					return NativeToFlowa(native)
 				},
 			},
 		},
@@ -460,7 +472,7 @@ func NewEnvironment() *Environment {
 						return newError("wrong number of arguments. got=%d, want=1 or 2", len(args))
 					}
 					// args[0] is data, args[1] is status (optional)
-					native := flowaToNative(args[0])
+					native := FlowaToNative(args[0])
 					bytes, err := json.Marshal(native)
 					if err != nil {
 						return newError("json marshal error: %s", err)
@@ -901,7 +913,7 @@ func NewEnvironment() *Environment {
 			if !ok {
 				return newError("argument to auth.hash_password must be a String")
 			}
-			hash, err := hashPassword(pass.Value)
+			hash, err := HashPassword(pass.Value)
 			if err != nil {
 				return newError("failed to hash password: %s", err)
 			}
@@ -921,8 +933,8 @@ func NewEnvironment() *Environment {
 			if !ok {
 				return newError("second argument to auth.verify_password must be a String")
 			}
-			valid := verifyPassword(hash.Value, pass.Value)
-			if valid {
+			match := VerifyPassword(hash.Value, pass.Value)
+			if match {
 				return TRUE
 			}
 			return FALSE
@@ -954,8 +966,8 @@ func NewEnvironment() *Environment {
 			}
 
 			// Convert Flowa Map to native map
-			nativePayload := flowaToNative(payload).(map[string]interface{})
-			token, err := signToken(nativePayload, secret.Value, expiresIn.Value)
+			nativePayload := FlowaToNative(payload).(map[string]interface{})
+			token, err := SignToken(nativePayload, secret.Value, expiresIn.Value)
 			if err != nil {
 				return newError("failed to sign token: %s", err)
 			}
@@ -976,11 +988,11 @@ func NewEnvironment() *Environment {
 				return newError("second argument to jwt.verify must be a String")
 			}
 
-			claims, err := verifyToken(token.Value, secret.Value)
+			claims, err := VerifyToken(token.Value, secret.Value)
 			if err != nil {
 				return NULL // Or error? usually null for invalid token
 			}
-			return nativeToFlowa(claims)
+			return NativeToFlowa(claims)
 		},
 	}
 	env.store["jwt"] = jwtModule
@@ -1008,8 +1020,15 @@ func NewEnvironment() *Environment {
 				return newError("invalid request object for websocket upgrade")
 			}
 
-			w := nativeW.Value.(http.ResponseWriter)
-			r := nativeR.Value.(*http.Request)
+			// Issue 4 Fix: Safe type assertions to prevent panics
+			w, ok := nativeW.Value.(http.ResponseWriter)
+			if !ok {
+				return newError("invalid ResponseWriter type")
+			}
+			r, ok := nativeR.Value.(*http.Request)
+			if !ok {
+				return newError("invalid Request type")
+			}
 
 			conn, err := upgradeToWebSocket(w, r)
 			if err != nil {
@@ -1033,6 +1052,12 @@ func NewEnvironment() *Environment {
 				return newError("second argument to ws.send must be a String")
 			}
 
+			// Issue 5 Fix: Protect concurrent writes with mutex
+			conn.mu.Lock()
+			defer conn.mu.Unlock()
+
+			// Issue 3 Fix: Add write deadline (10 seconds)
+			conn.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			err := conn.Conn.WriteMessage(websocket.TextMessage, []byte(msg.Value))
 			if err != nil {
 				return newError("failed to send message: %s", err)
@@ -1050,10 +1075,24 @@ func NewEnvironment() *Environment {
 				return newError("argument to ws.read must be a WebSocketConnection")
 			}
 
-			_, message, err := conn.Conn.ReadMessage()
+			// Issue 2 Fix: Add read deadline (60 seconds)
+			conn.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+
+			// Issue 6 Fix: Handle message types properly
+			msgType, message, err := conn.Conn.ReadMessage()
 			if err != nil {
-				return NULL // Disconnected
+				return NULL // Disconnected or timeout
 			}
+
+			// Only handle text messages, reject binary
+			if msgType != websocket.TextMessage {
+				if msgType == websocket.CloseMessage {
+					return NULL // Connection closing
+				}
+				// Binary or other types not supported
+				return newError("unsupported message type: %d", msgType)
+			}
+
 			return &String{Value: string(message)}
 		},
 	}
@@ -1066,6 +1105,15 @@ func NewEnvironment() *Environment {
 			if !ok {
 				return newError("argument to ws.close must be a WebSocketConnection")
 			}
+			// Issue 1 Fix: Send close handshake before closing
+			conn.mu.Lock()
+			defer conn.mu.Unlock()
+
+			// Send close message with normal closure code
+			conn.Conn.WriteMessage(websocket.CloseMessage,
+				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+
+			// Then close the connection
 			conn.Conn.Close()
 			return TRUE
 		},
@@ -1830,6 +1878,25 @@ func NewEnvironment() *Environment {
 			fields["headers"] = headerMap
 
 			return &StructInstance{Name: "Response", Fields: fields}
+		},
+	}
+
+	// http.use(middleware_fn) - register global middleware
+	httpModule["use"] = &BuiltinFunction{
+		Fn: func(args ...Object) Object {
+			if len(args) != 1 {
+				return newError("wrong number of arguments. got=%d, want=1", len(args))
+			}
+			// Accept both BuiltinFunction (from middleware.logger()) and Function (custom middleware)
+			switch mw := args[0].(type) {
+			case *Function:
+				globalMiddlewares = append(globalMiddlewares, mw)
+			case *BuiltinFunction:
+				globalMiddlewares = append(globalMiddlewares, mw)
+			default:
+				return newError("argument to `http.use` must be FUNCTION, got %s", args[0].Kind())
+			}
+			return NULL
 		},
 	}
 

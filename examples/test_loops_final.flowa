@@ -1,0 +1,41 @@
+# Test all loop types
+print("=== Loop Tests ===\n")
+
+# 1. While loop
+print("1. While loop:")
+i = 0
+while i < 3 {
+    print("  i =", i)
+    i = i + 1
+}
+
+# 2. For-in loop  
+print("\n2. For-in loop:")
+for item in [10, 20, 30] {
+    print("  item =", item)
+}
+
+# 3. Classic for loop
+print("\n3. Classic for loop:")
+for(x=0; x<3; x=x+1) {
+    print("  x =", x)
+}
+
+# 4. Nested loops
+print("\n4. Nested loops:")
+for(a=0; a<2; a=a+1) {
+    for(b=0; b<2; b=b+1) {
+        print("  (", a, ",", b, ")")
+    }
+}
+
+# 5. Break in loop
+print("\n5. Break:")
+for(n=0; n<10; n=n+1) {
+    if n == 3 {
+        break
+    }
+    print("  n =", n)
+}
+
+print("\n✅ All loops work!")

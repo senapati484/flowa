@@ -1,0 +1,23 @@
+# Test HTTP Server Module
+print("Testing HTTP Server...")
+
+# Define a simple route handler
+func hello_handler(req){
+    return {"status": 200, "type": "json", "body": "{\"message\": \"Hello from Flowa!\"}"}
+}
+
+# Define a user route handler
+func user_handler(req){
+    return {"status": 200, "type": "json", "body": "{\"user_id\": \"123\", \"name\": \"Alice\"}"}
+}
+
+# Register routes
+http.route("GET", "/hello", hello_handler)
+http.route("GET", "/user", user_handler)
+
+print("Routes registered. Starting server on :8080...")
+print("Visit http://localhost:8080/hello to test")
+print("Visit http://localhost:8080/user to test")
+
+# Start the server (this will block)
+http.listen("8080")

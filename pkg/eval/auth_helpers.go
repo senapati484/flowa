@@ -10,19 +10,19 @@ import (
 
 // --- Auth Helpers ---
 
-func hashPassword(password string) (string, error) {
+func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
 }
 
-func verifyPassword(hash, password string) bool {
+func VerifyPassword(hash, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
 // --- JWT Helpers ---
 
-func signToken(payload map[string]interface{}, secret string, expiresIn string) (string, error) {
+func SignToken(payload map[string]interface{}, secret string, expiresIn string) (string, error) {
 	claims := jwt.MapClaims{}
 	for k, v := range payload {
 		claims[k] = v
@@ -39,7 +39,7 @@ func signToken(payload map[string]interface{}, secret string, expiresIn string) 
 	return token.SignedString([]byte(secret))
 }
 
-func verifyToken(tokenString string, secret string) (map[string]interface{}, error) {
+func VerifyToken(tokenString string, secret string) (map[string]interface{}, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

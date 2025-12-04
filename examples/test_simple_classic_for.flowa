@@ -1,0 +1,8 @@
+# Test simple classic for-loop
+print("Testing classic for-loop...")
+
+for(i=0; i<3; i = i + 1){
+    print("i =", i)
+}
+
+print("Done!")

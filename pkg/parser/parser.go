@@ -6,6 +6,7 @@ import (
 	"flowa/pkg/token"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -19,21 +20,105 @@ const (
 	PREFIX      // -X or !X
 	CALL        // myFunction(X)
 	MEMBER      // object.property
+	POSTFIX     // i++
 )
 
 var precedences = map[token.TokenType]int{
-	token.EQ:       EQUALS,
-	token.NOT_EQ:   EQUALS,
-	token.LT:       LESSGREATER,
-	token.GT:       LESSGREATER,
-	token.PLUS:     SUM,
-	token.MINUS:    SUM,
-	token.SLASH:    PRODUCT,
-	token.ASTERISK: PRODUCT,
-	token.LPAREN:   CALL,
-	token.DOT:      MEMBER,
-	token.LBRACKET: MEMBER, // Bracket access has same precedence as member access
-	token.PIPE:     PIPELINE,
+	token.EQ:          EQUALS,
+	token.NOT_EQ:      EQUALS,
+	token.LT:          LESSGREATER,
+	token.GT:          LESSGREATER,
+	token.LTE:         LESSGREATER, // <=
+	token.GTE:         LESSGREATER, // >=
+	token.PLUS:        SUM,
+	token.MINUS:       SUM,
+	token.SLASH:       PRODUCT,
+	token.ASTERISK:    PRODUCT,
+	token.LPAREN:      CALL,
+	token.DOT:         MEMBER,
+	token.LBRACKET:    MEMBER, // Bracket access has same precedence as member access
+	token.PIPE:        PIPELINE,
+	token.PLUS_PLUS:   POSTFIX,
+	token.MINUS_MINUS: POSTFIX,
+}
+
+func (p *Parser) parseForClauseStatement() ast.Statement {
+	if p.curTokenIs(token.IDENT) && p.peekTokenIs(token.ASSIGN) {
+		return p.parseAssignmentStatement()
+	}
+
+	startToken := p.curToken
+	expr := p.parseExpression(LOWEST)
+	if expr == nil {
+		return nil
+	}
+
+	return &ast.ExpressionStatement{Token: startToken, Expression: expr}
+}
+
+func (p *Parser) parsePostfixExpression(left ast.Expression) ast.Expression {
+	return &ast.PostfixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Left:     left,
+	}
+}
+
+func (p *Parser) parseClassicForStatement() *ast.ClassicForStatement {
+	stmt := &ast.ClassicForStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	// Move to first token inside parentheses
+	p.nextToken()
+
+	// Initialization statement (optional)
+	if !p.curTokenIs(token.SEMICOLON) {
+		stmt.Init = p.parseForClauseStatement()
+		if stmt.Init == nil {
+			return nil
+		}
+		if !p.expectPeek(token.SEMICOLON) {
+			return nil
+		}
+	}
+
+	// Move to condition
+	p.nextToken()
+	if !p.curTokenIs(token.SEMICOLON) {
+		stmt.Condition = p.parseExpression(LOWEST)
+		if stmt.Condition == nil {
+			return nil
+		}
+		if !p.expectPeek(token.SEMICOLON) {
+			return nil
+		}
+	}
+
+	// Move to post statement or closing paren
+	p.nextToken()
+	if !p.curTokenIs(token.RPAREN) {
+		stmt.Post = p.parseForClauseStatement()
+		if stmt.Post == nil {
+			return nil
+		}
+		if !p.expectPeek(token.RPAREN) {
+			return nil
+		}
+	}
+
+	if !p.curTokenIs(token.RPAREN) {
+		return nil
+	}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	stmt.Body = p.parseBraceBlockStatement()
+	return stmt
 }
 
 type (
@@ -84,10 +169,14 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.LTE, p.parseInfixExpression) // <=
+	p.registerInfix(token.GTE, p.parseInfixExpression) // >=
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.PIPE, p.parsePipelineExpression)
 	p.registerInfix(token.DOT, p.parseMemberExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression) // NEW: bracket access
+	p.registerInfix(token.PLUS_PLUS, p.parsePostfixExpression)
+	p.registerInfix(token.MINUS_MINUS, p.parsePostfixExpression)
 
 	// Server keywords as identifiers
 	p.registerPrefix(token.GET, p.parseIdentifier)
@@ -131,16 +220,21 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.RETURN:
 		return p.parseReturnStatement()
-	case token.DEF:
+	case token.BREAK:
+		return p.parseBreakStatement()
+	case token.FUNC:
 		return p.parseFunctionStatement()
 	case token.ASYNC:
-		if p.peekTokenIs(token.DEF) {
+		if p.peekTokenIs(token.FUNC) {
 			return p.parseFunctionStatement()
 		}
 		return nil
 	case token.WHILE:
 		return p.parseWhileStatement()
 	case token.FOR:
+		if p.peekTokenIs(token.LPAREN) {
+			return p.parseClassicForStatement()
+		}
 		return p.parseForStatement()
 	case token.MODULE:
 		return p.parseModuleStatement()
@@ -205,15 +299,25 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	return stmt
 }
 
+func (p *Parser) parseBreakStatement() *ast.BreakStatement {
+	stmt := &ast.BreakStatement{Token: p.curToken}
+
+	if p.peekTokenIs(token.NEWLINE) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
 func (p *Parser) parseFunctionStatement() *ast.FunctionStatement {
 	stmt := &ast.FunctionStatement{Token: p.curToken}
 	if p.curTokenIs(token.ASYNC) {
 		stmt.IsAsync = true
-		if !p.expectPeek(token.DEF) {
+		if !p.expectPeek(token.FUNC) {
 			return nil
 		}
 	}
-	// now curToken is DEF
+	// now curToken is FUNC
 	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
@@ -226,15 +330,12 @@ func (p *Parser) parseFunctionStatement() *ast.FunctionStatement {
 
 	stmt.Parameters = p.parseFunctionParameters()
 
-	if !p.expectPeek(token.COLON) {
+	// Expect opening brace for function body
+	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
 
-	if !p.expectPeek(token.NEWLINE) {
-		return nil
-	}
-
-	stmt.Body = p.parseBlockStatement()
+	stmt.Body = p.parseBraceBlockStatement()
 
 	return stmt
 }
@@ -286,21 +387,61 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	return block
 }
 
+// parseBraceBlockStatement parses a brace-delimited block (for functions)
+func (p *Parser) parseBraceBlockStatement() *ast.BlockStatement {
+	block := &ast.BlockStatement{Token: p.curToken}
+	block.Statements = []ast.Statement{}
+
+	p.nextToken() // consume LBRACE
+
+	// Skip any newlines after opening brace
+	for p.curTokenIs(token.NEWLINE) {
+		p.nextToken()
+	}
+
+	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
+		if p.curTokenIs(token.NEWLINE) || p.curTokenIs(token.INDENT) || p.curTokenIs(token.DEDENT) {
+			p.nextToken()
+			continue
+		}
+		stmt := p.parseStatement()
+		if stmt != nil {
+			block.Statements = append(block.Statements, stmt)
+		}
+		p.nextToken()
+	}
+
+	return block
+}
+
 func (p *Parser) parseWhileStatement() *ast.WhileStatement {
 	stmt := &ast.WhileStatement{Token: p.curToken}
 
-	p.nextToken()
-	stmt.Condition = p.parseExpression(LOWEST)
+	// Check if parentheses are used (optional)
+	hasParens := p.peekTokenIs(token.LPAREN)
 
-	if !p.expectPeek(token.COLON) {
+	if hasParens {
+		// Parse with parentheses: while(condition){}
+		p.nextToken() // consume LPAREN
+		p.nextToken()
+		stmt.Condition = p.parseExpression(LOWEST)
+
+		// Expect closing paren
+		if !p.expectPeek(token.RPAREN) {
+			return nil
+		}
+	} else {
+		// Parse without parentheses: while condition{}
+		p.nextToken()
+		stmt.Condition = p.parseExpression(LOWEST)
+	}
+
+	// Expect opening brace
+	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
 
-	if !p.expectPeek(token.NEWLINE) {
-		return nil
-	}
-
-	stmt.Body = p.parseBlockStatement()
+	stmt.Body = p.parseBraceBlockStatement()
 
 	return stmt
 }
@@ -321,15 +462,12 @@ func (p *Parser) parseForStatement() *ast.ForStatement {
 	p.nextToken()
 	stmt.Value = p.parseExpression(LOWEST)
 
-	if !p.expectPeek(token.COLON) {
+	// Expect opening brace
+	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
 
-	if !p.expectPeek(token.NEWLINE) {
-		return nil
-	}
-
-	stmt.Body = p.parseBlockStatement()
+	stmt.Body = p.parseBraceBlockStatement()
 
 	return stmt
 }
@@ -596,6 +734,20 @@ func (p *Parser) parseIdentifier() ast.Expression {
 }
 
 func (p *Parser) parseIntegerLiteral() ast.Expression {
+	// Check if this is actually a float (contains a dot)
+	if strings.Contains(p.curToken.Literal, ".") {
+		lit := &ast.FloatLiteral{Token: p.curToken}
+		value, err := strconv.ParseFloat(p.curToken.Literal, 64)
+		if err != nil {
+			msg := fmt.Sprintf("could not parse %q as float", p.curToken.Literal)
+			p.errors = append(p.errors, msg)
+			return nil
+		}
+		lit.Value = value
+		return lit
+	}
+
+	// Parse as integer
 	lit := &ast.IntegerLiteral{Token: p.curToken}
 
 	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
@@ -706,27 +858,41 @@ func (p *Parser) parseDeferStatement() *ast.DeferStatement {
 func (p *Parser) parseIfExpression() ast.Expression {
 	expression := &ast.IfExpression{Token: p.curToken}
 
-	p.nextToken()
-	expression.Condition = p.parseExpression(LOWEST)
+	// Check if parentheses are used (optional)
+	hasParens := p.peekTokenIs(token.LPAREN)
 
-	if !p.expectPeek(token.COLON) {
+	if hasParens {
+		// Parse with parentheses: if(condition){}
+		p.nextToken() // consume LPAREN
+		p.nextToken()
+		expression.Condition = p.parseExpression(LOWEST)
+
+		// Expect closing paren
+		if !p.expectPeek(token.RPAREN) {
+			return nil
+		}
+	} else {
+		// Parse without parentheses: if condition{}
+		p.nextToken()
+		expression.Condition = p.parseExpression(LOWEST)
+	}
+
+	// Expect opening brace
+	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
-	if !p.expectPeek(token.NEWLINE) {
-		return nil
-	}
 
-	expression.Consequence = p.parseBlockStatement()
+	expression.Consequence = p.parseBraceBlockStatement()
 
 	// Handle ELIF and ELSE
-	// Since Flowa is indentation based, ELIF/ELSE usually appear after DEDENT of the previous block.
-	// However, parseBlockStatement consumes the DEDENT.
-	// So we just check the next token.
+	// Skip any newlines/whitespace between blocks
+	for p.peekTokenIs(token.NEWLINE) || p.peekTokenIs(token.INDENT) || p.peekTokenIs(token.DEDENT) {
+		p.nextToken()
+	}
 
 	if p.peekTokenIs(token.ELIF) {
 		p.nextToken() // consume ELIF
 		// Parse as a new IfExpression (recursively)
-		// We wrap it in an ExpressionStatement to fit the Statement interface
 		elifExpr := p.parseIfExpression()
 		expression.Alternative = &ast.ExpressionStatement{
 			Token:      elifExpr.(*ast.IfExpression).Token,
@@ -737,13 +903,13 @@ func (p *Parser) parseIfExpression() ast.Expression {
 
 	if p.peekTokenIs(token.ELSE) {
 		p.nextToken() // consume ELSE
-		if !p.expectPeek(token.COLON) {
+
+		// Expect opening brace
+		if !p.expectPeek(token.LBRACE) {
 			return nil
 		}
-		if !p.expectPeek(token.NEWLINE) {
-			return nil
-		}
-		expression.Alternative = p.parseBlockStatement()
+
+		expression.Alternative = p.parseBraceBlockStatement()
 	}
 
 	return expression

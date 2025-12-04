@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowa WebSocket Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 600px;
+            height: 700px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .chat-header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .status {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .status.connected {
+            color: #4ade80;
+        }
+        
+        .status.disconnected {
+            color: #f87171;
+        }
+        
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f9fafb;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.sent {
+            text-align: right;
+        }
+        
+        .message-bubble {
+            display: inline-block;
+            padding: 12px 18px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        
+        .message.received .message-bubble {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+        
+        .message.sent .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 5px;
+        }
+        
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 10px;
+        }
+        
+        #messageInput {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid #e5e7eb;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        #messageInput:focus {
+            border-color: #667eea;
+        }
+        
+        #sendButton {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        #sendButton:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        #sendButton:active {
+            transform: translateY(0);
+        }
+        
+        #sendButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .system-message {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🚀 Flowa WebSocket Chat</h1>
+            <div class="status" id="status">Connecting...</div>
+        </div>
+        
+        <div class="messages" id="messages">
+            <div class="system-message">Welcome to Flowa WebSocket Chat!</div>
+            <div class="system-message">This demonstrates real-time WebSocket communication with the Flowa VM</div>
+        </div>
+        
+        <div class="input-area">
+            <input 
+                type="text" 
+                id="messageInput" 
+                placeholder="Type your message..." 
+                disabled
+            >
+            <button id="sendButton" disabled>Send</button>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const statusDiv = document.getElementById('status');
+
+        function formatTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function addMessage(text, type = 'received') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'message-bubble';
+            bubbleDiv.textContent = text;
+            
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = formatTime();
+            
+            messageDiv.appendChild(bubbleDiv);
+            messageDiv.appendChild(timeDiv);
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addSystemMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'system-message';
+            div.textContent = text;
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function connect() {
+            ws = new WebSocket('ws://localhost:8080/ws');
+
+            ws.onopen = () => {
+                console.log('Connected to WebSocket');
+                statusDiv.textContent = '● Connected';
+                statusDiv.className = 'status connected';
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                messageInput.focus();
+                addSystemMessage('Connected to server');
+            };
+
+            ws.onmessage = (event) => {
+                console.log('Message received:', event.data);
+                addMessage(event.data, 'received');
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                addSystemMessage('Connection error occurred');
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from WebSocket');
+                statusDiv.textContent = '● Disconnected';
+                statusDiv.className = 'status disconnected';
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+                addSystemMessage('Disconnected from server');
+                
+                // Attempt to reconnect after 3 seconds
+                setTimeout(() => {
+                    addSystemMessage('Attempting to reconnect...');
+                    connect();
+                }, 3000);
+            };
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(message);
+                addMessage(message, 'sent');
+                messageInput.value = '';
+                messageInput.focus();
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Connect on page load
+        connect();
+    </script>
+</body>
+</html>

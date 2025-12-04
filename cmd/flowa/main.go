@@ -2,403 +2,237 @@ package main
 
 import (
 	"bufio"
-	"flowa/pkg/ast"
+	"flag"
 	"flowa/pkg/compiler"
-	"flowa/pkg/eval"
 	"flowa/pkg/lexer"
 	"flowa/pkg/parser"
 	"flowa/pkg/version"
 	"flowa/pkg/vm"
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
-
-	"github.com/joho/godotenv"
 )
 
-const PROMPT = ">>> "
+// loadEnvFile loads environment variables from .env file
+func loadEnvFile(filepath string) error {
+	file, err := os.Open(filepath)
+	if err != nil {
+		// .env file is optional, don't error if it doesn't exist
+		return nil
+	}
+	defer file.Close()
 
-var useVM = true // Use the new VM by default
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Parse KEY=VALUE
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Remove quotes if present
+		value = strings.Trim(value, "\"'")
+
+		// Set environment variable
+		os.Setenv(key, value)
+	}
+
+	return scanner.Err()
+}
+
+func printUsage() {
+	fmt.Println("Flowa - A fast, modern programming language")
+	fmt.Println()
+	fmt.Println("Usage:")
+	fmt.Println("  flowa <script.flowa>       Run a Flowa script")
+	fmt.Println("  flowa --help, -h           Show this help message")
+	fmt.Println("  flowa --version, -v        Show version information")
+	fmt.Println("  flowa --examples, -ex      Show code examples for all features")
+	fmt.Println()
+	fmt.Println("Examples:")
+	fmt.Println("  flowa examples/01_basics.flowa")
+	fmt.Println("  flowa server.flowa")
+	fmt.Println()
+	fmt.Println("Documentation: https://github.com/senapati484/flowa")
+	fmt.Println("Email: flowalang@gmail.com")
+}
+
+func printVersion() {
+	fmt.Printf("Flowa version %s\n", version.Version)
+	fmt.Printf("Build date: %s\n", version.BuildDate)
+	fmt.Printf("Repository: %s\n", version.GitCommit)
+}
+
+func printExamples() {
+	fmt.Println("=== Flowa Code Examples ===")
+	fmt.Println()
+
+	fmt.Println("📚 BASICS:")
+	fmt.Println(`  # Variables`)
+	fmt.Println(`  name = "Alice"`)
+	fmt.Println(`  age = 30`)
+	fmt.Println(`  numbers = [1, 2, 3, 4, 5]`)
+	fmt.Println(`  user = {"name": "Bob", "age": 25}`)
+	fmt.Println()
+	fmt.Println(`  # Output`)
+	fmt.Println(`  print("Hello, World!")`)
+	fmt.Println(`  print("Name:", name, "Age:", age)`)
+	fmt.Println()
+
+	fmt.Println("📧 EMAIL (mail module):")
+	fmt.Println(`  mail.send({"to": "user@example.com", "subject": "Hello", "body": "Message"})`)
+	fmt.Println()
+
+	fmt.Println("🔐 AUTHENTICATION (auth module):")
+	fmt.Println(`  hash = auth.hash_password("mypassword")`)
+	fmt.Println(`  if auth.verify_password("mypassword", hash) { print("Valid!") }`)
+	fmt.Println()
+
+	fmt.Println("🎫 JWT TOKENS (jwt module):")
+	fmt.Println(`  token = jwt.sign({"user": "alice"}, "secret", "24h")`)
+	fmt.Println(`  claims = jwt.verify(token, "secret")`)
+	fmt.Println()
+
+	fmt.Println("🌐 HTTP SERVER (http module):")
+	fmt.Println(`  func handler(req){ return response.json({"status": "ok"}, 200) }`)
+	fmt.Println(`  route("GET", "/api/users", handler)`)
+	fmt.Println(`  listen(8080)`)
+	fmt.Println()
+
+	fmt.Println("🌍 HTTP CLIENT (http module):")
+	fmt.Println(`  resp = http.get("https://api.example.com/data")`)
+	fmt.Println(`  data = json.decode(resp.body)`)
+	fmt.Println()
+
+	fmt.Println("🔌 WEBSOCKETS (websocket module):")
+	fmt.Println(`  conn = websocket.upgrade(req)`)
+	fmt.Println(`  websocket.send(conn, "Hello!")`)
+	fmt.Println(`  msg = websocket.read(conn)`)
+	fmt.Println()
+
+	fmt.Println("📊 JSON (json module):")
+	fmt.Println(`  json_str = json.encode({"name": "Alice", "age": 30})`)
+	fmt.Println(`  data = json.decode('{"key": "value"}')`)
+	fmt.Println()
+
+	fmt.Println("📂 FILE SYSTEM (fs module):")
+	fmt.Println(`  content = fs.read("file.txt")`)
+	fmt.Println(`  fs.write("output.txt", "Hello World")`)
+	fmt.Println(`  if fs.exists("config.json") { print("Found!") }`)
+	fmt.Println()
+
+	fmt.Println("⚙️  CONFIG (config module):")
+	fmt.Println(`  port = config.env("PORT", "8080")`)
+	fmt.Println(`  secret = config.env("JWT_SECRET", "default")`)
+	fmt.Println()
+
+	fmt.Println("🚀 CONTROL FLOW:")
+	fmt.Println(`  if x > 5 { print("Big") } else { print("Small") }`)
+	fmt.Println(`  while count < 10 { count = count + 1 }`)
+	fmt.Println(`  for item in [1,2,3] { print(item) }`)
+	fmt.Println()
+
+	fmt.Println("📝 FUNCTIONS:")
+	fmt.Println(`  func add(a, b) { return a + b }`)
+	fmt.Println(`  result = add(5, 10)`)
+	fmt.Println()
+
+	fmt.Println("📚 For more examples, visit: https://github.com/senapati484/flowa/tree/main/examples")
+	fmt.Println()
+	fmt.Println("💡 Tip: Run 'flowa --help' for usage information")
+}
 
 func main() {
-	// Load .env file if it exists
-	_ = godotenv.Load()
+	// Load .env file first (before anything else)
+	loadEnvFile(".env")
 
-	if len(os.Args) < 2 {
+	// Define flags
+	helpFlag := flag.Bool("help", false, "Show help message")
+	helpShort := flag.Bool("h", false, "Show help message")
+	versionFlag := flag.Bool("version", false, "Show version information")
+	versionShort := flag.Bool("v", false, "Show version information")
+	examplesFlag := flag.Bool("examples", false, "Show code examples")
+	examplesShort := flag.Bool("ex", false, "Show code examples")
+
+	// Custom usage message
+	flag.Usage = printUsage
+
+	// Parse flags
+	flag.Parse()
+
+	// Handle flags
+	if *helpFlag || *helpShort {
 		printUsage()
 		os.Exit(0)
 	}
 
-	command := os.Args[1]
-
-	// Handle flags
-	switch command {
-	case "--version", "-v", "version":
+	if *versionFlag || *versionShort {
 		printVersion()
-		return
-	case "--help", "-h", "help":
-		printHelp()
-		return
+		os.Exit(0)
 	}
 
-	// If the first argument ends with .flowa, treat it as a file to run
-	if len(command) > 6 && command[len(command)-6:] == ".flowa" {
-		runFile(command)
-		return
+	if *examplesFlag || *examplesShort {
+		printExamples()
+		os.Exit(0)
 	}
 
-	// Handle subcommands
-	switch command {
-	case "repl":
-		startREPL()
-	case "run":
-		if len(os.Args) < 3 {
-			fmt.Println("Usage: flowa run <file>")
-			os.Exit(1)
-		}
-		runFile(os.Args[2])
-	case "eval":
-		if len(os.Args) < 3 {
-			fmt.Println("Usage: flowa eval '<code>'")
-			os.Exit(1)
-		}
-		evalCode(os.Args[2])
-	case "inspect":
-		if len(os.Args) < 3 {
-			fmt.Println("Usage: flowa inspect <file>")
-			os.Exit(1)
-		}
-		inspectFile(os.Args[2])
-	case "pipelines":
-		if len(os.Args) < 3 {
-			fmt.Println("Usage: flowa pipelines <file>")
-			os.Exit(1)
-		}
-		printPipelineOverview(os.Args[2])
-	case "ast":
-		if len(os.Args) < 3 {
-			fmt.Println("Usage: flowa ast <file>")
-			os.Exit(1)
-		}
-		printProgramAST(os.Args[2])
-	case "version":
-		printVersion()
-	case "help":
-		printHelp()
-	case "uninstall":
-		uninstallFlowa()
-	default:
-		fmt.Printf("Unknown command: %s\n\n", command)
-		printHelp()
-		os.Exit(1)
+	// Check for script file
+	args := flag.Args()
+	if len(args) < 1 {
+		// Show usage when no file is specified
+		printUsage()
+		os.Exit(0)
 	}
-}
 
-func printUsage() {
-	fmt.Println("Flowa Programming Language v" + version.Version)
-	fmt.Println("\nUsage:")
-	fmt.Println("  flowa <file.flowa>       Run a Flowa script")
-	fmt.Println("  flowa repl               Start interactive REPL")
-	fmt.Println("  flowa run <file>         Run a Flowa script (explicit)")
-	fmt.Println("  flowa eval '<code>'      Evaluate a Flowa expression")
-	fmt.Println("  flowa uninstall          Remove the Flowa binary from this machine")
-	fmt.Println("  flowa version            Show version information")
-	fmt.Println("  flowa help               Show this help message")
-	fmt.Println("\nFlags:")
-	fmt.Println("  -v, --version            Show version information")
-	fmt.Println("  -h, --help               Show this help message")
-}
-
-func startREPL() {
-	scanner := bufio.NewScanner(os.Stdin)
-	env := eval.NewEnvironment()
-
-	fmt.Println("Flowa REPL v0.1 (MVP)")
-	fmt.Println("Type expressions or statements and press Enter")
-
-	for {
-		fmt.Print(PROMPT)
-		scanned := scanner.Scan()
-		if !scanned {
-			return
-		}
-
-		line := scanner.Text()
-		l := lexer.New(line)
-		p := parser.New(l)
-
-		program := p.ParseProgram()
-		if len(p.Errors()) != 0 {
-			printParserErrors(os.Stdout, p.Errors())
-			continue
-		}
-
-		evaluated := eval.Eval(program, env)
-		if evaluated != nil {
-			io.WriteString(os.Stdout, evaluated.Inspect())
-			io.WriteString(os.Stdout, "\n")
-		}
-	}
+	filename := args[0]
+	runFile(filename)
 }
 
 func runFile(filename string) {
-	program, parserErrors, err := parseProgramFromFile(filename)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
 		os.Exit(1)
 	}
-	if len(parserErrors) != 0 {
-		printParserErrors(os.Stderr, parserErrors)
-		os.Exit(1)
-	}
 
-	if useVM {
-		// Use the optimized VM
-		result, err := runWithVM(program)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-			os.Exit(1)
-		}
-		// Only print non-null results
-		if result != nil && result.Kind() != eval.KindNull {
-			fmt.Println(result.Inspect())
-		}
-	} else {
-		// Use the old tree-walk evaluator (for debugging)
-		env := eval.NewEnvironment()
-		evaluated := eval.Eval(program, env)
-		if evaluated != nil && evaluated.Kind() == eval.KindError {
-			fmt.Fprintf(os.Stderr, "%s\n", evaluated.Inspect())
-			os.Exit(1)
-		}
-	}
-}
+	// Lexer
+	l := lexer.New(string(content))
 
-func inspectFile(filename string) {
-	program, parserErrors, err := parseProgramFromFile(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
-		os.Exit(1)
-	}
-	if len(parserErrors) != 0 {
-		printParserErrors(os.Stderr, parserErrors)
-		os.Exit(1)
-	}
-
-	insights := analyzeProgram(program)
-	printFunctionInsights(insights.Functions)
-	printPipelineInsights(insights.Pipelines)
-}
-
-func printPipelineOverview(filename string) {
-	program, parserErrors, err := parseProgramFromFile(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
-		os.Exit(1)
-	}
-	if len(parserErrors) != 0 {
-		printParserErrors(os.Stderr, parserErrors)
-		os.Exit(1)
-	}
-
-	insights := analyzeProgram(program)
-	printPipelineInsights(insights.Pipelines)
-}
-
-func printProgramAST(filename string) {
-	program, parserErrors, err := parseProgramFromFile(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
-		os.Exit(1)
-	}
-	if len(parserErrors) != 0 {
-		printParserErrors(os.Stderr, parserErrors)
-		os.Exit(1)
-	}
-	printAST(program)
-}
-
-func parseProgramFromFile(filename string) (*ast.Program, []string, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	l := lexer.New(string(data))
+	// Parser
 	p := parser.New(l)
-
 	program := p.ParseProgram()
-	if errs := p.Errors(); len(errs) != 0 {
-		return nil, errs, nil
-	}
 
-	return program, nil, nil
-}
-
-func printFunctionInsights(functions []FunctionInfo) {
-	fmt.Printf("Functions (%d)\n", len(functions))
-	if len(functions) == 0 {
-		fmt.Println("  · No function definitions found.")
-		return
-	}
-
-	for _, fn := range functions {
-		marker := "def"
-		if fn.IsAsync {
-			marker = "async def"
+	if len(p.Errors()) > 0 {
+		fmt.Println("Parser errors:")
+		for _, msg := range p.Errors() {
+			fmt.Println("\t", msg)
 		}
-		fmt.Printf("  · %s %s(%s)\n", marker, fn.Name, strings.Join(fn.Parameters, ", "))
-	}
-}
-
-func printPipelineInsights(pipelines []PipelineInfo) {
-	fmt.Printf("Pipelines (%d)\n", len(pipelines))
-	if len(pipelines) == 0 {
-		fmt.Println("  · No pipelines detected. Use |> to chain transformations!")
-		return
+		os.Exit(1)
 	}
 
-	for i, pipe := range pipelines {
-		fmt.Printf("  · Pipeline %d: %s\n", i+1, strings.Join(pipe.Chain, " |> "))
-	}
-}
-
-func printVersion() {
-	fmt.Printf("Flowa %s\n", version.Version)
-	fmt.Printf("Build Date: %s\n", version.BuildDate)
-	fmt.Printf("Git Commit: %s\n", version.GitCommit)
-}
-
-func printHelp() {
-	fmt.Println("Flowa — pipeline-first programming language")
-	fmt.Println()
-	fmt.Println("Usage:")
-	fmt.Println("  flowa <file.flowa>      Run a Flowa script (shortcut for 'flowa run')")
-	fmt.Println("  flowa run <file>        Execute a script")
-	fmt.Println("  flowa repl              Start the interactive REPL")
-	fmt.Println("  flowa inspect <file>    Summarize functions and pipelines")
-	fmt.Println("  flowa pipelines <file>  Render pipeline chains")
-	fmt.Println("  flowa ast <file>        Print the program AST")
-	fmt.Println("  flowa uninstall         Remove the globally installed binary")
-	fmt.Println("  flowa version           Display build metadata")
-	fmt.Println("  flowa help              Show this help message")
-	fmt.Println()
-	fmt.Println("Global flags:")
-	fmt.Println("  --help, -h              Show help")
-	fmt.Println("  --version, -v           Show version")
-}
-
-func uninstallFlowa() {
-	binaryName := "flowa"
-	if runtime.GOOS == "windows" {
-		binaryName += ".exe"
-	}
-
-	var candidatePaths []string
-	if existingPath, err := exec.LookPath("flowa"); err == nil {
-		candidatePaths = append(candidatePaths, existingPath)
-	}
-
-	switch runtime.GOOS {
-	case "windows":
-		candidatePaths = append(candidatePaths,
-			filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", "Flowa", binaryName),
-			filepath.Join(os.Getenv("ProgramFiles"), "Flowa", binaryName),
-		)
-	default:
-		candidatePaths = append(candidatePaths,
-			"/usr/local/bin/"+binaryName,
-			"/usr/bin/"+binaryName,
-			filepath.Join(os.Getenv("HOME"), "go", "bin", "flowa"),
-		)
-	}
-
-	removed := false
-	for _, path := range candidatePaths {
-		if path == "" {
-			continue
-		}
-		if _, err := os.Stat(path); err == nil {
-			if err := os.Remove(path); err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to remove %s: %v\n", path, err)
-				os.Exit(1)
-			}
-			fmt.Printf("✓ Removed %s\n", path)
-			removed = true
-		}
-	}
-
-	if !removed {
-		fmt.Println("No installed flowa binary was found in common locations.")
-		return
-	}
-
-	fmt.Println("Flowa uninstalled successfully.")
-}
-
-func runWithVM(program *ast.Program) (eval.Object, error) {
+	// Compiler
 	comp := compiler.New()
-	err := comp.Compile(program)
+	err = comp.Compile(program)
 	if err != nil {
-		return nil, fmt.Errorf("compilation failed: %s", err)
+		fmt.Fprintf(os.Stderr, "Compilation error: %v\n", err)
+		os.Exit(1)
 	}
 
+	// VM
 	machine := vm.New(comp.Bytecode())
 	err = machine.Run()
 	if err != nil {
-		return nil, fmt.Errorf("VM error: %s", err)
-	}
-
-	return machine.LastPoppedStackElem(), nil
-}
-
-func evalCode(code string) {
-	l := lexer.New(code)
-	p := parser.New(l)
-
-	program := p.ParseProgram()
-	if len(p.Errors()) != 0 {
-		printParserErrors(os.Stderr, p.Errors())
+		fmt.Fprintf(os.Stderr, "Runtime error: %v\n", err)
 		os.Exit(1)
 	}
-
-	if useVM {
-		// Use the new VM
-		result, err := runWithVM(program)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-			os.Exit(1)
-		}
-		if result != nil && result.Kind() != eval.KindNull {
-			fmt.Println(result.Inspect())
-		}
-	} else {
-		// Use the old tree-walk evaluator
-		env := eval.NewEnvironment()
-		evaluated := eval.Eval(program, env)
-		if evaluated != nil {
-			if evaluated.Kind() == eval.KindError {
-				fmt.Fprintf(os.Stderr, "%s\n", evaluated.Inspect())
-				os.Exit(1)
-			}
-			if evaluated.Kind() != eval.KindNull {
-				fmt.Println(evaluated.Inspect())
-			}
-		}
-	}
-}
-
-func printParserErrors(out io.Writer, errors []string) {
-	io.WriteString(out, "Parser errors:\n")
-	for _, msg := range errors {
-		io.WriteString(out, "\t"+msg+"\n")
-	}
-}
-
-func printAST(node ast.Node) {
-	fmt.Println(node.String())
 }
